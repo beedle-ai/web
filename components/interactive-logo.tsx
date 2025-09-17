@@ -39,13 +39,14 @@ const InteractiveLogoComponent = forwardRef<HTMLDivElement, InteractiveLogoProps
         style={perspectiveStyle}
         {...hoverHandlers}
       >
-        <div className="relative w-32 h-28 sm:w-40 sm:h-36" style={brightnessStyle}>
+        <div className="relative w-32 h-28 sm:w-40 sm:h-36 select-none" style={brightnessStyle}>
           <Image
             src="/beedle_logo-white.svg"
             alt="Beedle Logo"
             fill
-            className="object-contain opacity-90 dark:opacity-90 invert dark:invert-0"
+            className="object-contain opacity-90 dark:opacity-90 invert dark:invert-0 pointer-events-none select-none"
             priority
+            draggable={false}
           />
           {isHovering && <div className="absolute inset-0 pointer-events-none" style={glowStyle} />}
         </div>

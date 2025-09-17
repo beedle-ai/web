@@ -393,3 +393,123 @@
 .animate-light-shimmer {
   animation: light-shimmer 8s ease-in-out infinite;
 }
+
+/* Environment-based theming */
+[data-time="dawn"] {
+  --background: oklch(0.98 0.01 60);
+  --foreground: oklch(0.15 0.02 30);
+  --mesh-opacity: 0.15;
+}
+
+[data-time="morning"] {
+  --mesh-opacity: 0.2;
+}
+
+[data-time="afternoon"] {
+  --mesh-opacity: 0.25;
+}
+
+[data-time="evening"] {
+  --background: oklch(0.98 0.005 270);
+  --foreground: oklch(0.15 0.025 250);
+  --mesh-opacity: 0.18;
+}
+
+[data-time="night"] {
+  --background: oklch(0.96 0.003 250);
+  --foreground: oklch(0.18 0.02 260);
+  --mesh-opacity: 0.12;
+}
+
+.dark[data-time="dawn"] {
+  --background: oklch(0.15 0.025 40);
+  --foreground: oklch(0.95 0.005 50);
+}
+
+.dark[data-time="evening"] {
+  --background: oklch(0.12 0.03 280);
+  --foreground: oklch(0.95 0.003 260);
+}
+
+.dark[data-time="night"] {
+  --background: oklch(0.1 0.025 250);
+  --foreground: oklch(0.92 0.003 240);
+}
+
+/* Weather-based animations */
+@keyframes rain {
+  0% {
+    transform: translateY(-100%) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(100vh) translateX(20px);
+    opacity: 0;
+  }
+}
+
+@keyframes snow {
+  0% {
+    transform: translateY(-100%) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100vh) translateX(100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes fog {
+  0%,
+  100% {
+    transform: translateX(-5%) translateY(0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(5%) translateY(-10px);
+    opacity: 0.4;
+  }
+}
+
+.animate-rain {
+  animation: rain 1s linear infinite;
+}
+
+.animate-snow {
+  animation: snow 8s linear infinite;
+}
+
+.animate-fog {
+  animation: fog 10s ease-in-out infinite;
+}
+
+/* Weather overlays */
+[data-weather="rain"] {
+  --particle-color: oklch(0.6 0.15 220);
+}
+
+[data-weather="snow"] {
+  --particle-color: oklch(0.95 0.01 0);
+}
+
+[data-weather="fog"] {
+  --background-opacity: 0.95;
+}
+
+[data-weather="storm"] {
+  --background: oklch(0.94 0.02 270);
+  --mesh-opacity: 0.3;
+}
+
+.dark[data-weather="storm"] {
+  --background: oklch(0.08 0.04 280);
+}

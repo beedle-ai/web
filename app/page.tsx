@@ -2,9 +2,10 @@
 
 import { useRef, useEffect } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { WireframeMesh } from "@/components/wireframe-mesh"
+import { EnvironmentWireframeMesh } from "@/components/environment-wireframe-mesh"
 import { BackgroundLayers } from "@/components/background-layers"
-import { AnimatedParticles } from "@/components/animated-particles"
+import { EnvironmentParticles } from "@/components/environment-particles"
+import { EnvironmentStatus } from "@/components/environment-status"
 import { InteractiveTitle } from "@/components/interactive-title"
 import { InteractiveLogo } from "@/components/interactive-logo"
 import { useMousePerspective } from "@/lib/hooks/use-mouse-perspective"
@@ -58,8 +59,11 @@ export default function Home() {
         <ThemeToggle />
       </div>
 
+      <EnvironmentStatus />
+
       <BackgroundLayers />
-      <WireframeMesh />
+      <EnvironmentWireframeMesh />
+      <EnvironmentParticles />
 
       <div className="relative flex h-full w-full items-center justify-center px-4">
         <main className="relative z-10 text-center">
@@ -79,7 +83,7 @@ export default function Home() {
             perspectiveStyle={logoPerspectiveStyle}
           />
 
-          <AnimatedParticles />
+          {/* Original particles replaced by environment particles */}
         </main>
       </div>
     </div>

@@ -3,16 +3,21 @@
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WireframeMesh } from "@/components/wireframe-mesh";
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 
 export default function Home() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHoveringText, setIsHoveringText] = useState(false);
+  const [isHoveringLogo, setIsHoveringLogo] = useState(false);
   const textRef = useRef<HTMLHeadingElement>(null);
+  const logoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handlePointerMove = (e: MouseEvent | TouchEvent) => {
-      if (textRef.current) {
-        const rect = textRef.current.getBoundingClientRect();
+      // Use the logo ref if hovering over logo, otherwise use text ref
+      const activeRef = isHoveringLogo ? logoRef.current : textRef.current;
+      if (activeRef) {
+        const rect = activeRef.getBoundingClientRect();
         const clientX = 'touches' in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
         const clientY = 'touches' in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
         const x = (clientX - rect.left - rect.width / 2) / rect.width;
@@ -30,7 +35,7 @@ export default function Home() {
       window.removeEventListener('touchmove', handlePointerMove);
       window.removeEventListener('touchstart', handlePointerMove);
     };
-  }, []);
+  }, [isHoveringLogo]);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 transition-colors duration-500">
@@ -109,6 +114,50 @@ export default function Home() {
             </span>
           </h1>
 
+          {/* Beedle logo with same interactions */}
+          <div
+            ref={logoRef}
+            className="mt-8 flex justify-center cursor-default"
+            onMouseEnter={() => setIsHoveringLogo(true)}
+            onMouseLeave={() => setIsHoveringLogo(false)}
+            onTouchStart={() => setIsHoveringLogo(true)}
+            onTouchEnd={() => setIsHoveringLogo(false)}
+            style={{
+              transform: isHoveringLogo
+                ? `perspective(1000px) rotateX(${-mousePos.y * 4}deg) rotateY(${mousePos.x * 6}deg) scale(1.02)`
+                : `perspective(1000px) rotateX(${-mousePos.y * 1}deg) rotateY(${mousePos.x * 1.5}deg) scale(1)`,
+              transition: 'transform 0.15s ease-out'
+            }}
+          >
+            <div
+              className="relative w-32 h-28 sm:w-40 sm:h-36"
+              style={{
+                filter: isHoveringLogo
+                  ? `brightness(${1.15 + Math.abs(mousePos.x) * 0.05 + Math.abs(mousePos.y) * 0.05})`
+                  : 'brightness(1)',
+                transition: 'filter 0.3s ease-out'
+              }}
+            >
+              <Image
+                src="/beedle_logo-white.svg"
+                alt="Beedle Logo"
+                fill
+                className="object-contain opacity-80 dark:opacity-90 dark:invert-0 invert"
+              />
+              {/* Very subtle glow on hover */}
+              {isHoveringLogo && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: `radial-gradient(200px circle at ${50 + mousePos.x * 10}% ${50 + mousePos.y * 10}%,
+                      rgba(148, 163, 184, 0.03) 0%,
+                      transparent 40%)`,
+                    filter: 'blur(20px)'
+                  }}
+                />
+              )}
+            </div>
+          </div>
 
           {/* Enhanced floating particles across text width */}
           <div className="absolute inset-x-0 -inset-y-24 max-w-[650px] mx-auto -z-10">

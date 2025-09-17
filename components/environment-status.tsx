@@ -53,7 +53,7 @@ export function EnvironmentStatus() {
         className={cn(
           "flex items-center gap-2 px-3 py-2 min-w-[180px]",
           "hover:bg-gray-50/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors",
-          isExpanded && "border-b border-gray-200 dark:border-gray-800"
+          isExpanded && "border-b border-gray-200 dark:border-gray-800 w-full"
         )}
       >
         <div className="flex items-center gap-2 flex-1">

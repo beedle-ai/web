@@ -3,10 +3,29 @@ import type { WeatherAPIResponse } from "@/lib/types/environment"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const lat = searchParams.get("lat")
-  const lon = searchParams.get("lon")
+  let lat = searchParams.get("lat")
+  let lon = searchParams.get("lon")
 
-  // If no coordinates provided, use a default location (San Francisco)
+  // If no coordinates provided, try to get location from IP
+  if (!lat || !lon) {
+    try {
+      // Get IP-based location using ipapi.co (free tier: 1000 requests/day)
+      const ipResponse = await fetch("https://ipapi.co/json/", {
+        next: { revalidate: 86400 }, // Cache for 24 hours
+      })
+
+      if (ipResponse.ok) {
+        const ipData = await ipResponse.json()
+        lat = ipData.latitude?.toString()
+        lon = ipData.longitude?.toString()
+        // Using IP-based location: ipData.city, ipData.country_name
+      }
+    } catch (error) {
+      console.warn("IP geolocation failed:", error)
+    }
+  }
+
+  // Final fallback to San Francisco if IP lookup fails
   const latitude = lat || "37.7749"
   const longitude = lon || "-122.4194"
 

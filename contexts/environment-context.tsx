@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect } from "react"
 import { useEnvironment } from "@/lib/hooks/use-environment"
+import { useEnvironmentOverride } from "@/lib/hooks/use-environment-override"
 import type { EnvironmentState } from "@/lib/types/environment"
 
 interface EnvironmentContextValue {
@@ -13,7 +14,8 @@ interface EnvironmentContextValue {
 const EnvironmentContext = createContext<EnvironmentContextValue | undefined>(undefined)
 
 export function EnvironmentProvider({ children }: { children: React.ReactNode }) {
-  const { environment, isLoading, locationPermission } = useEnvironment()
+  const { environment: baseEnvironment, isLoading, locationPermission } = useEnvironment()
+  const environment = useEnvironmentOverride(baseEnvironment)
 
   // Update CSS variables based on environment
   useEffect(() => {

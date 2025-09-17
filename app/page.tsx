@@ -4,8 +4,10 @@ import { useRef, useEffect } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { EnvironmentWireframeMesh } from "@/components/environment-wireframe-mesh"
 import { BackgroundLayers } from "@/components/background-layers"
-import { EnvironmentParticles } from "@/components/environment-particles"
+import { EnhancedEnvironmentParticles } from "@/components/enhanced-environment-particles"
+import { EnvironmentLighting } from "@/components/environment-lighting"
 import { EnvironmentStatus } from "@/components/environment-status"
+import { EnvironmentTestPanel } from "@/components/environment-test-panel"
 import { InteractiveTitle } from "@/components/interactive-title"
 import { InteractiveLogo } from "@/components/interactive-logo"
 import { useMousePerspective } from "@/lib/hooks/use-mouse-perspective"
@@ -60,10 +62,12 @@ export default function Home() {
       </div>
 
       <EnvironmentStatus />
+      <EnvironmentTestPanel />
 
       <BackgroundLayers />
+      <EnvironmentLighting />
       <EnvironmentWireframeMesh />
-      <EnvironmentParticles />
+      <EnhancedEnvironmentParticles />
 
       <div className="relative flex h-full w-full items-center justify-center px-4">
         <main className="relative z-10 text-center">

@@ -116,8 +116,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply overflow-hidden h-full;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-hidden h-full fixed inset-0;
+    overscroll-behavior: none;
+    touch-action: none;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

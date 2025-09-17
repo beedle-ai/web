@@ -27,7 +27,6 @@ export function ThemeToggle() {
       className="group relative flex h-7 w-14 items-center rounded-full bg-gray-200/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-300/50 dark:border-gray-600/50 transition-all duration-300 hover:border-gray-400/70 dark:hover:border-gray-500/70"
       aria-label="Toggle theme"
     >
-      {/* Sliding indicator */}
       <div
         className={`absolute h-5 w-5 rounded-full bg-white dark:bg-gray-900 shadow-sm transition-all duration-500 ${
           isDark ? 'translate-x-8' : 'translate-x-1'
@@ -37,7 +36,6 @@ export function ThemeToggle() {
         }}
       />
 
-      {/* Sun icon */}
       <div className="absolute left-1.5 transition-all duration-300">
         <svg
           width="14"
@@ -64,7 +62,6 @@ export function ThemeToggle() {
         </svg>
       </div>
 
-      {/* Moon icon */}
       <div className="absolute right-1.5 transition-all duration-300">
         <svg
           width="14"
@@ -83,7 +80,6 @@ export function ThemeToggle() {
         </svg>
       </div>
 
-      {/* Subtle glow effect on hover */}
       <div
         className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{

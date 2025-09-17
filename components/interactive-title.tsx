@@ -1,7 +1,7 @@
 "use client"
 
-import { forwardRef, memo } from 'react'
-import { ANIMATION_CONFIG } from '@/lib/constants/animation'
+import { forwardRef, memo } from "react"
+import { ANIMATION_CONFIG } from "@/lib/constants/animation"
 
 interface InteractiveTitleProps {
   isHovering: boolean
@@ -21,14 +21,14 @@ const InteractiveTitleComponent = forwardRef<HTMLHeadingElement, InteractiveTitl
       background: `radial-gradient(${ANIMATION_CONFIG.glow.radius}px circle at ${50 + mousePos.x * 10}% ${50 + mousePos.y * 10}%,
         rgba(148, 163, 184, ${ANIMATION_CONFIG.glow.opacity}) 0%,
         transparent 40%)`,
-      filter: `blur(${ANIMATION_CONFIG.glow.blur}px)`
+      filter: `blur(${ANIMATION_CONFIG.glow.blur}px)`,
     }
 
     const textGradientStyle: React.CSSProperties = {
       filter: isHovering
         ? `brightness(${ANIMATION_CONFIG.brightness.base + Math.abs(mousePos.x) * ANIMATION_CONFIG.brightness.mouseInfluence + Math.abs(mousePos.y) * ANIMATION_CONFIG.brightness.mouseInfluence})`
-        : 'brightness(1)',
-      transition: 'filter 0.3s ease-out'
+        : "brightness(1)",
+      transition: "filter 0.3s ease-out",
     }
 
     return (
@@ -43,18 +43,13 @@ const InteractiveTitleComponent = forwardRef<HTMLHeadingElement, InteractiveTitl
           style={textGradientStyle}
         >
           beedle.ai
-          {isHovering && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={glowStyle}
-            />
-          )}
+          {isHovering && <div className="absolute inset-0 pointer-events-none" style={glowStyle} />}
         </span>
       </h1>
     )
   }
 )
 
-InteractiveTitleComponent.displayName = 'InteractiveTitle'
+InteractiveTitleComponent.displayName = "InteractiveTitle"
 
 export const InteractiveTitle = memo(InteractiveTitleComponent)

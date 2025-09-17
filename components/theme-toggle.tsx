@@ -16,10 +16,10 @@ export function ThemeToggle() {
   }
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark')
+    setTheme(theme === "dark" ? "light" : "dark")
   }
 
-  const isDark = theme === 'dark'
+  const isDark = theme === "dark"
 
   return (
     <button
@@ -29,10 +29,10 @@ export function ThemeToggle() {
     >
       <div
         className={`absolute h-5 w-5 rounded-full bg-white dark:bg-gray-900 shadow-sm transition-all duration-500 ${
-          isDark ? 'translate-x-8' : 'translate-x-1'
+          isDark ? "translate-x-8" : "translate-x-1"
         }`}
         style={{
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)'
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)",
         }}
       />
 
@@ -47,7 +47,7 @@ export function ThemeToggle() {
           strokeLinecap="round"
           strokeLinejoin="round"
           className={`text-gray-600 dark:text-gray-500 transition-opacity duration-300 ${
-            isDark ? 'opacity-50' : 'opacity-100'
+            isDark ? "opacity-50" : "opacity-100"
           }`}
         >
           <circle cx="12" cy="12" r="5" />
@@ -73,7 +73,7 @@ export function ThemeToggle() {
           strokeLinecap="round"
           strokeLinejoin="round"
           className={`text-gray-500 dark:text-gray-400 transition-opacity duration-300 ${
-            isDark ? 'opacity-100' : 'opacity-50'
+            isDark ? "opacity-100" : "opacity-50"
           }`}
         >
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
@@ -84,8 +84,8 @@ export function ThemeToggle() {
         className="absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
           background: isDark
-            ? 'radial-gradient(circle, rgba(148, 163, 184, 0.15) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(71, 85, 105, 0.15) 0%, transparent 70%)'
+            ? "radial-gradient(circle, rgba(148, 163, 184, 0.15) 0%, transparent 70%)"
+            : "radial-gradient(circle, rgba(71, 85, 105, 0.15) 0%, transparent 70%)",
         }}
       />
     </button>

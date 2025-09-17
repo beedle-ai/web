@@ -1,6 +1,6 @@
-import * as THREE from 'three'
-import type { NetworkNode, NetworkEdge } from './types'
-import { MESH_CONFIG } from './config'
+import * as THREE from "three"
+import type { NetworkNode, NetworkEdge } from "./types"
+import { MESH_CONFIG } from "./config"
 
 function gaussianRandom(): number {
   const u1 = Math.random()
@@ -32,10 +32,7 @@ function isValidNodePosition(position: THREE.Vector3, existingNodes: NetworkNode
   return true
 }
 
-export function generateNodes(
-  nodesGroup: THREE.Group,
-  isDarkMode: boolean
-): NetworkNode[] {
+export function generateNodes(nodesGroup: THREE.Group, isDarkMode: boolean): NetworkNode[] {
   const nodes: NetworkNode[] = []
   let attempts = 0
 
@@ -58,7 +55,7 @@ export function generateNodes(
       const material = new THREE.MeshBasicMaterial({
         color: isDarkMode ? MESH_CONFIG.nodes.color.dark : MESH_CONFIG.nodes.color.light,
         transparent: true,
-        opacity
+        opacity,
       })
 
       const nodeMesh = new THREE.Mesh(geometry, material)
@@ -69,7 +66,7 @@ export function generateNodes(
         mesh: nodeMesh,
         position,
         connections: [],
-        phase: Math.random() * Math.PI * 2
+        phase: Math.random() * Math.PI * 2,
       })
     }
   }
@@ -123,13 +120,20 @@ export function generateEdges(
 
     const connectedAngles: number[] = []
 
-    for (let c = 0; c < potentialConnections.length && connectedAngles.length < connectionsToMake; c++) {
+    for (
+      let c = 0;
+      c < potentialConnections.length && connectedAngles.length < connectionsToMake;
+      c++
+    ) {
       const { index: j, angle } = potentialConnections[c]
 
       let goodAngle = connectedAngles.length === 0
       for (const existingAngle of connectedAngles) {
         const angleDiff = Math.abs(angle - existingAngle)
-        if (angleDiff >= MESH_CONFIG.edges.minAngleSeparation && angleDiff <= Math.PI * 2 - MESH_CONFIG.edges.minAngleSeparation) {
+        if (
+          angleDiff >= MESH_CONFIG.edges.minAngleSeparation &&
+          angleDiff <= Math.PI * 2 - MESH_CONFIG.edges.minAngleSeparation
+        ) {
           goodAngle = true
           break
         }
@@ -149,7 +153,7 @@ export function generateEdges(
         const material = new THREE.LineBasicMaterial({
           color: isDarkMode ? MESH_CONFIG.edges.color.dark : MESH_CONFIG.edges.color.light,
           transparent: true,
-          opacity
+          opacity,
         })
 
         const line = new THREE.Line(geometry, material)

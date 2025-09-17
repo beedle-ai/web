@@ -1,14 +1,14 @@
 "use client"
 
-import { useRef } from 'react'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { WireframeMesh } from '@/components/wireframe-mesh'
-import { BackgroundLayers } from '@/components/background-layers'
-import { AnimatedParticles } from '@/components/animated-particles'
-import { InteractiveTitle } from '@/components/interactive-title'
-import { InteractiveLogo } from '@/components/interactive-logo'
-import { useMousePerspective } from '@/lib/hooks/use-mouse-perspective'
-import { useHoverState } from '@/lib/hooks/use-hover-state'
+import { useRef } from "react"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { WireframeMesh } from "@/components/wireframe-mesh"
+import { BackgroundLayers } from "@/components/background-layers"
+import { AnimatedParticles } from "@/components/animated-particles"
+import { InteractiveTitle } from "@/components/interactive-title"
+import { InteractiveLogo } from "@/components/interactive-logo"
+import { useMousePerspective } from "@/lib/hooks/use-mouse-perspective"
+import { useHoverState } from "@/lib/hooks/use-hover-state"
 
 export default function Home() {
   const textRef = useRef<HTMLHeadingElement>(null)

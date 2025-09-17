@@ -1,18 +1,18 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from 'react'
-import * as THREE from 'three'
-import { MESH_CONFIG } from '@/lib/three/config'
-import type { NetworkNode, NetworkEdge, MousePosition } from '@/lib/three/types'
-import { generateNodes, generateEdges } from '@/lib/three/network-generator'
-import { animateNodes, animateEdges, handleMouseMove } from '@/lib/three/animation'
+import { useEffect, useRef, useState, useCallback } from "react"
+import * as THREE from "three"
+import { MESH_CONFIG } from "@/lib/three/config"
+import type { NetworkNode, NetworkEdge, MousePosition } from "@/lib/three/types"
+import { generateNodes, generateEdges } from "@/lib/three/network-generator"
+import { animateNodes, animateEdges, handleMouseMove } from "@/lib/three/animation"
 
 function useThemeDetection() {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
     const checkDarkMode = () => {
-      setIsDarkMode(document.documentElement.classList.contains('dark'))
+      setIsDarkMode(document.documentElement.classList.contains("dark"))
     }
 
     checkDarkMode()
@@ -20,7 +20,7 @@ function useThemeDetection() {
     const observer = new MutationObserver(checkDarkMode)
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class']
+      attributeFilter: ["class"],
     })
 
     return () => observer.disconnect()
@@ -69,7 +69,7 @@ export function WireframeMesh() {
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
-      antialias: true
+      antialias: true,
     })
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.setPixelRatio(window.devicePixelRatio)
@@ -90,10 +90,10 @@ export function WireframeMesh() {
     nodesRef.current = nodes
     edgesRef.current = edges
 
-    window.addEventListener('mousemove', handlePointerMove)
-    window.addEventListener('touchmove', handlePointerMove)
-    window.addEventListener('touchstart', handlePointerMove)
-    window.addEventListener('resize', handleResize)
+    window.addEventListener("mousemove", handlePointerMove)
+    window.addEventListener("touchmove", handlePointerMove)
+    window.addEventListener("touchstart", handlePointerMove)
+    window.addEventListener("resize", handleResize)
 
     let time = 0
     const animate = () => {
@@ -109,10 +109,10 @@ export function WireframeMesh() {
     animate()
 
     return () => {
-      window.removeEventListener('resize', handleResize)
-      window.removeEventListener('mousemove', handlePointerMove)
-      window.removeEventListener('touchmove', handlePointerMove)
-      window.removeEventListener('touchstart', handlePointerMove)
+      window.removeEventListener("resize", handleResize)
+      window.removeEventListener("mousemove", handlePointerMove)
+      window.removeEventListener("touchmove", handlePointerMove)
+      window.removeEventListener("touchstart", handlePointerMove)
 
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current)
@@ -124,7 +124,7 @@ export function WireframeMesh() {
 
       renderer.dispose()
 
-      nodesGroup.children.forEach(child => {
+      nodesGroup.children.forEach((child) => {
         if (child instanceof THREE.Mesh) {
           child.geometry.dispose()
           if (child.material instanceof THREE.Material) {
@@ -133,7 +133,7 @@ export function WireframeMesh() {
         }
       })
 
-      edgesGroup.children.forEach(child => {
+      edgesGroup.children.forEach((child) => {
         if (child instanceof THREE.Line) {
           child.geometry.dispose()
           if (child.material instanceof THREE.Material) {
@@ -148,7 +148,7 @@ export function WireframeMesh() {
     <div
       ref={mountRef}
       className="absolute inset-0 pointer-events-none"
-      style={{ filter: 'contrast(1.1) brightness(1.2)' }}
+      style={{ filter: "contrast(1.1) brightness(1.2)" }}
     />
   )
 }

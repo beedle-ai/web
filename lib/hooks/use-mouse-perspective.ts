@@ -1,4 +1,5 @@
-import { useState, useEffect, RefObject, useCallback } from 'react'
+import { useState, useEffect, useCallback } from "react"
+import type { RefObject } from "react"
 
 interface MousePosition {
   x: number
@@ -17,7 +18,7 @@ interface PerspectiveConfig {
 const DEFAULT_CONFIG: Required<PerspectiveConfig> = {
   rotationIntensity: { x: 6, y: 4 },
   scale: 1.02,
-  transition: 'transform 0.15s ease-out'
+  transition: "transform 0.15s ease-out",
 }
 
 export function useMousePerspective(
@@ -28,30 +29,33 @@ export function useMousePerspective(
   const [mousePos, setMousePos] = useState<MousePosition>({ x: 0, y: 0 })
   const mergedConfig = { ...DEFAULT_CONFIG, ...config }
 
-  const handlePointerMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (!elementRef.current) return
+  const handlePointerMove = useCallback(
+    (e: MouseEvent | TouchEvent) => {
+      if (!elementRef.current) return
 
-    const rect = elementRef.current.getBoundingClientRect()
-    const clientX = 'touches' in e ? e.touches[0]?.clientX ?? 0 : e.clientX
-    const clientY = 'touches' in e ? e.touches[0]?.clientY ?? 0 : e.clientY
+      const rect = elementRef.current.getBoundingClientRect()
+      const clientX = "touches" in e ? (e.touches[0]?.clientX ?? 0) : e.clientX
+      const clientY = "touches" in e ? (e.touches[0]?.clientY ?? 0) : e.clientY
 
-    const x = (clientX - rect.left - rect.width / 2) / rect.width
-    const y = (clientY - rect.top - rect.height / 2) / rect.height
+      const x = (clientX - rect.left - rect.width / 2) / rect.width
+      const y = (clientY - rect.top - rect.height / 2) / rect.height
 
-    setMousePos({ x, y })
-  }, [elementRef])
+      setMousePos({ x, y })
+    },
+    [elementRef]
+  )
 
   useEffect(() => {
     if (!isActive) return
 
-    window.addEventListener('mousemove', handlePointerMove)
-    window.addEventListener('touchmove', handlePointerMove)
-    window.addEventListener('touchstart', handlePointerMove)
+    window.addEventListener("mousemove", handlePointerMove)
+    window.addEventListener("touchmove", handlePointerMove)
+    window.addEventListener("touchstart", handlePointerMove)
 
     return () => {
-      window.removeEventListener('mousemove', handlePointerMove)
-      window.removeEventListener('touchmove', handlePointerMove)
-      window.removeEventListener('touchstart', handlePointerMove)
+      window.removeEventListener("mousemove", handlePointerMove)
+      window.removeEventListener("touchmove", handlePointerMove)
+      window.removeEventListener("touchstart", handlePointerMove)
     }
   }, [isActive, handlePointerMove])
 
@@ -59,7 +63,7 @@ export function useMousePerspective(
     transform: isActive
       ? `perspective(1000px) rotateX(${-mousePos.y * mergedConfig.rotationIntensity.y}deg) rotateY(${mousePos.x * mergedConfig.rotationIntensity.x}deg) scale(${mergedConfig.scale})`
       : `perspective(1000px) rotateX(${-mousePos.y * 1}deg) rotateY(${mousePos.x * 1.5}deg) scale(1)`,
-    transition: mergedConfig.transition
+    transition: mergedConfig.transition,
   }
 
   return { mousePos, perspectiveStyle }

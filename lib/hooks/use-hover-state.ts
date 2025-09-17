@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback } from "react"
 
 export function useHoverState() {
   const [isHovering, setIsHovering] = useState(false)
@@ -14,7 +14,7 @@ export function useHoverState() {
       onMouseEnter: handleMouseEnter,
       onMouseLeave: handleMouseLeave,
       onTouchStart: handleTouchStart,
-      onTouchEnd: handleTouchEnd
-    }
+      onTouchEnd: handleTouchEnd,
+    },
   }
 }

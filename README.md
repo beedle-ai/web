@@ -28,4 +28,3 @@ pnpm start
 ---
 
 [beedle.ai](https://beedle.ai)
-

@@ -24,7 +24,3 @@ pnpm dev
 pnpm build
 pnpm start
 ```
-
----
-
-[beedle.ai](https://beedle.ai)

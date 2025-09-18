@@ -30,7 +30,8 @@
         "successComment": false,
         "failComment": false,
         "addReleases": "bottom",
-        "draftRelease": true
+        "draftRelease": true,
+        "prerelease": false
       }
     ]
   ]

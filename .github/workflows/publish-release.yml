@@ -1,4 +1,4 @@
-name: Publish Release
+name: Publish Draft Release
 
 on:
   workflow_dispatch:
@@ -21,37 +21,40 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get latest draft release
-        if: github.event.inputs.release_id == ''
-        id: latest_draft
+      - name: Get draft release to publish
+        id: get_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          DRAFT_RELEASE=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.repository }}/releases \
-            --jq '.[] | select(.draft == true) | .id' \
-            | head -n 1)
+          if [ -n "${{ github.event.inputs.release_id }}" ]; then
+            RELEASE_ID="${{ github.event.inputs.release_id }}"
+          else
+            # Get the latest draft release
+            RELEASE_ID=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/${{ github.repository }}/releases \
+              --jq '.[] | select(.draft == true) | .id' \
+              | head -n 1)
+          fi
 
-          if [ -z "$DRAFT_RELEASE" ]; then
-            echo "No draft releases found"
+          if [ -z "$RELEASE_ID" ]; then
+            echo "❌ No draft releases found"
             exit 1
           fi
 
-          echo "release_id=$DRAFT_RELEASE" >> $GITHUB_OUTPUT
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
+          echo "Using release ID: $RELEASE_ID"
 
-      - name: Publish release
+      - name: Publish the draft release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_ID="${{ github.event.inputs.release_id || steps.latest_draft.outputs.release_id }}"
-
           gh api \
             --method PATCH \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.repository }}/releases/$RELEASE_ID \
+            /repos/${{ github.repository }}/releases/${{ steps.get_release.outputs.release_id }} \
             -f draft=false
 
           echo "✅ Published release: https://github.com/${{ github.repository }}/releases"

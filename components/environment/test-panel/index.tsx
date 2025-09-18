@@ -20,11 +20,6 @@ interface TestOverrides {
 export function EnvironmentTestPanel() {
   const [isOpen, setIsOpen] = useState(false)
   const [overrides, setOverrides] = useState<TestOverrides>({ enabled: false })
-  const [isDevelopment, setIsDevelopment] = useState(false)
-
-  useEffect(() => {
-    setIsDevelopment(process.env.NODE_ENV === "development")
-  }, [])
 
   useEffect(() => {
     if (!overrides.enabled) return
@@ -44,8 +39,6 @@ export function EnvironmentTestPanel() {
 
     window.dispatchEvent(new CustomEvent("environment-override", { detail: overrides }))
   }, [overrides])
-
-  if (!isDevelopment) return null
 
   const applyPreset = (preset: (typeof ENVIRONMENT_PRESETS)[number]) => {
     setOverrides({

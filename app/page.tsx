@@ -21,21 +21,16 @@ export default function Home() {
   const { isHovering: isHoveringLogo, hoverHandlers: logoHoverHandlers } = useHoverState()
 
   useEffect(() => {
-    const preventDefault = (e: Event) => {
-      e.preventDefault()
-    }
     document.body.style.overflow = "hidden"
     document.body.style.position = "fixed"
     document.body.style.width = "100%"
     document.body.style.height = "100%"
-    document.body.style.touchAction = "none"
-
-    document.addEventListener("touchmove", preventDefault, { passive: false })
-    document.addEventListener("wheel", preventDefault, { passive: false })
 
     return () => {
-      document.removeEventListener("touchmove", preventDefault)
-      document.removeEventListener("wheel", preventDefault)
+      document.body.style.overflow = ""
+      document.body.style.position = ""
+      document.body.style.width = ""
+      document.body.style.height = ""
     }
   }, [])
 

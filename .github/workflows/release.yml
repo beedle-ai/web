@@ -1,4 +1,4 @@
-name: Release
+name: Create Draft Release
 
 on:
   push:
@@ -39,4 +39,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HUSKY: 0
-        run: pnpm dlx semantic-release
+        run: |
+          # Install prettier globally for semantic-release to use
+          pnpm add -g prettier
+          pnpm dlx semantic-release

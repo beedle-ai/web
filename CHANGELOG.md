@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/beedle-ai/web/compare/v1.0.0...v1.0.1) (2025-09-18)
+
+### Bug Fixes
+
+- **ci:** make ci use release drafts and add auto pr labeller ([#2](https://github.com/beedle-ai/web/issues/2)) ([51dd9c6](https://github.com/beedle-ai/web/commit/51dd9c63056a344a7211d68904188f09641c98ce))
+
 # 1.0.0 (2025-09-18)
 
 ### Bug Fixes

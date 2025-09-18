@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "beedle.ai",
-  keywords: ["AI", "artificial intelligence", "technology", "innovation"],
+  keywords: ["AI", "artificial intelligence", "innovation"],
   authors: [{ name: "Beedle AI" }],
   robots: "index, follow",
 }

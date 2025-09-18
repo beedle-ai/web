@@ -154,7 +154,13 @@ export function WeatherParticles() {
   const stormIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    setParticles(generateParticles(environment.weather, environment.windSpeed))
+    // Only generate weather particles for specific weather conditions
+    if (["rain", "snow", "storm", "fog"].includes(environment.weather)) {
+      setParticles(generateParticles(environment.weather, environment.windSpeed))
+    } else {
+      // Clear weather particles for clear/clouds/unknown weather
+      setParticles([])
+    }
   }, [environment.weather, environment.windSpeed])
 
   useEffect(() => {

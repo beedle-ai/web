@@ -1,0 +1,20 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "feat/*": true,
+      "feature/*": true,
+      "fix/*": true,
+      "hotfix/*": true,
+      "chore/*": true,
+      "docs/*": true,
+      "style/*": true,
+      "refactor/*": true,
+      "test/*": true
+    }
+  },
+  "github": {
+    "enabled": true,
+    "autoAlias": true
+  }
+}

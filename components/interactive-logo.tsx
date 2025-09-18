@@ -39,7 +39,10 @@ const InteractiveLogoComponent = forwardRef<HTMLDivElement, InteractiveLogoProps
         style={perspectiveStyle}
         {...hoverHandlers}
       >
-        <div className="relative w-32 h-28 sm:w-40 sm:h-36 select-none" style={brightnessStyle}>
+        <div
+          className="relative w-24 h-20 sm:w-32 sm:h-28 md:w-40 md:h-36 select-none"
+          style={brightnessStyle}
+        >
           <Image
             src="/beedle_logo-white.svg"
             alt="Beedle Logo"

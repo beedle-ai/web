@@ -34,7 +34,7 @@ const InteractiveTitleComponent = forwardRef<HTMLHeadingElement, InteractiveTitl
     return (
       <h1
         ref={ref}
-        className="mb-12 text-7xl font-semibold tracking-tight sm:text-8xl lg:text-9xl select-none cursor-default"
+        className="mb-8 sm:mb-12 text-5xl font-semibold tracking-tight sm:text-7xl md:text-8xl lg:text-9xl select-none cursor-default"
         style={perspectiveStyle}
         {...hoverHandlers}
       >

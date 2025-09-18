@@ -1,8 +1,24 @@
+import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import type { WeatherAPIResponse } from "@/lib/types/environment"
 import { DEFAULT_LOCATION, CACHE_DURATIONS } from "@/lib/constants/environment"
 
-async function fetchIPLocation() {
+async function fetchIPLocation(request: NextRequest) {
+  // First try Vercel's geolocation headers (much faster)
+  const city = request.headers.get("x-vercel-ip-city")
+  const lat = request.headers.get("x-vercel-ip-latitude")
+  const lon = request.headers.get("x-vercel-ip-longitude")
+
+  if (lat && lon) {
+    // Vercel provides geolocation from edge network
+    return {
+      lat,
+      lon,
+      city: city ? decodeURIComponent(city) : undefined,
+    }
+  }
+
+  // Fallback to IP API service
   try {
     const response = await fetch("https://ipapi.co/json/", {
       next: { revalidate: CACHE_DURATIONS.IP_LOCATION },
@@ -13,6 +29,7 @@ async function fetchIPLocation() {
       return {
         lat: data.latitude?.toString(),
         lon: data.longitude?.toString(),
+        city: data.city,
       }
     }
   } catch {
@@ -61,16 +78,18 @@ async function fetchLocationName(latitude: string, longitude: string) {
   return "Unknown Location"
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   let lat = searchParams.get("lat")
   let lon = searchParams.get("lon")
+  let locationName: string | null = null
 
   if (!lat || !lon) {
-    const ipLocation = await fetchIPLocation()
+    const ipLocation = await fetchIPLocation(request)
     if (ipLocation) {
       lat = ipLocation.lat
       lon = ipLocation.lon
+      locationName = ipLocation.city || null
     }
   }
 
@@ -78,10 +97,12 @@ export async function GET(request: Request) {
   const longitude = lon || DEFAULT_LOCATION.longitude
 
   try {
-    const [weatherData, locationName] = await Promise.all([
-      fetchWeatherData(latitude, longitude),
-      fetchLocationName(latitude, longitude),
-    ])
+    // If we got a city name from IP geolocation, use it; otherwise fetch from coordinates
+    if (!locationName) {
+      locationName = await fetchLocationName(latitude, longitude)
+    }
+
+    const weatherData = await fetchWeatherData(latitude, longitude)
 
     return NextResponse.json({
       weather: weatherData.current,

@@ -21,8 +21,8 @@ export function useEnvironment() {
             lon: position.coords.longitude,
           })
         },
-        (error) => {
-          console.warn("Geolocation denied:", error)
+        () => {
+          // User denied location permission - API will use IP geolocation
           setPermissionDenied(true)
         },
         { timeout: 5000, maximumAge: 3600000 } // 1 hour cache
@@ -30,15 +30,14 @@ export function useEnvironment() {
     }
   }, [])
 
-  // Fetch weather data
+  // Fetch weather data - always fetch (API will use IP geolocation if no coords)
   const { data, error, isLoading } = useSWR(
-    coordinates || permissionDenied
-      ? `/api/environment${coordinates ? `?lat=${coordinates.lat}&lon=${coordinates.lon}` : ""}`
-      : null,
+    `/api/environment${coordinates ? `?lat=${coordinates.lat}&lon=${coordinates.lon}` : ""}`,
     fetcher,
     {
       refreshInterval: 1800000, // Refresh every 30 minutes
       revalidateOnFocus: false,
+      revalidateOnMount: true, // Always fetch on mount
     }
   )
 
@@ -52,7 +51,7 @@ export function useEnvironment() {
       temperature: 20,
       humidity: 50,
       windSpeed: 10,
-      location: "Loading...",
+      location: "Detecting location...",
       lastUpdated: now,
     }
   })

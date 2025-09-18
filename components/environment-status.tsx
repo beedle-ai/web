@@ -144,7 +144,7 @@ export function EnvironmentStatus() {
           <div className="pt-2 border-t border-gray-200 dark:border-gray-800">
             <div className="text-[10px] text-gray-500 dark:text-gray-400">
               The site&apos;s appearance adapts to your local time and weather conditions
-              {!locationPermission && " (using default location)"}
+              {!locationPermission && " (using approximate location from IP)"}
             </div>
           </div>
         </div>

@@ -4,10 +4,10 @@ import { useRef, useEffect } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { EnvironmentWireframeMesh } from "@/components/environment-wireframe-mesh"
 import { BackgroundLayers } from "@/components/background-layers"
-import { EnhancedEnvironmentParticles } from "@/components/enhanced-environment-particles"
-import { EnvironmentLighting } from "@/components/environment-lighting"
+import { ParticleSystem } from "@/components/particles"
+import { EnvironmentLighting } from "@/components/environment/lighting"
 import { EnvironmentStatus } from "@/components/environment-status"
-import { EnvironmentTestPanel } from "@/components/environment-test-panel"
+import { EnvironmentTestPanel } from "@/components/environment/test-panel"
 import { InteractiveTitle } from "@/components/interactive-title"
 import { InteractiveLogo } from "@/components/interactive-logo"
 import { useMousePerspective } from "@/lib/hooks/use-mouse-perspective"
@@ -21,22 +21,16 @@ export default function Home() {
   const { isHovering: isHoveringLogo, hoverHandlers: logoHoverHandlers } = useHoverState()
 
   useEffect(() => {
-    // Prevent scrolling on mobile
     const preventDefault = (e: Event) => {
       e.preventDefault()
     }
-
-    // Prevent pull-to-refresh and overscroll
     document.body.style.overflow = "hidden"
     document.body.style.position = "fixed"
     document.body.style.width = "100%"
     document.body.style.height = "100%"
     document.body.style.touchAction = "none"
 
-    // Prevent scrolling via touch
     document.addEventListener("touchmove", preventDefault, { passive: false })
-
-    // Prevent scrolling via mouse wheel
     document.addEventListener("wheel", preventDefault, { passive: false })
 
     return () => {
@@ -67,7 +61,7 @@ export default function Home() {
       <BackgroundLayers />
       <EnvironmentLighting />
       <EnvironmentWireframeMesh />
-      <EnhancedEnvironmentParticles />
+      <ParticleSystem />
 
       <div className="relative flex h-full w-full items-center justify-center px-4">
         <main className="relative z-10 text-center">
@@ -86,8 +80,6 @@ export default function Home() {
             hoverHandlers={logoHoverHandlers}
             perspectiveStyle={logoPerspectiveStyle}
           />
-
-          {/* Original particles replaced by environment particles */}
         </main>
       </div>
     </div>

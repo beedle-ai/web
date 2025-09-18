@@ -1,0 +1,57 @@
+# Version is provided by the workflow based on conventional commits
+name-template: '$INPUT_NAME'
+tag-template: '$INPUT_TAG'
+
+categories:
+  - title: '🚀 Features'
+    labels:
+      - 'feature'
+      - 'enhancement'
+    collapse-after: 5
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+    collapse-after: 5
+  - title: '🧰 Maintenance'
+    labels:
+      - 'chore'
+      - 'maintenance'
+    collapse-after: 5
+  - title: '📚 Documentation'
+    labels:
+      - 'documentation'
+      - 'docs'
+    collapse-after: 5
+
+autolabeler:
+  - label: 'feature'
+    title:
+      - '/^feat/i'
+  - label: 'fix'
+    title:
+      - '/^fix/i'
+  - label: 'chore'
+    title:
+      - '/^chore/i'
+  - label: 'documentation'
+    title:
+      - '/^docs/i'
+  - label: 'breaking'
+    title:
+      - '/!/i'
+    body:
+      - '/BREAKING CHANGE/i'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+exclude-labels:
+  - 'skip-changelog'
+
+commitish: main

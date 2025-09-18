@@ -1,0 +1,87 @@
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Calculate next version
+        id: version
+        run: |
+          # Install conventional-recommended-bump
+          npm install -g conventional-recommended-bump conventional-changelog-conventionalcommits
+
+          # Get the last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Last tag: $LAST_TAG"
+          CURRENT_VERSION="${LAST_TAG#v}"
+
+          # Check if there are any new commits
+          if [ "$LAST_TAG" = "v0.0.0" ]; then
+            COMMITS_RANGE="HEAD"
+          else
+            COMMITS_RANGE="$LAST_TAG..HEAD"
+          fi
+
+          TOTAL=$(git log $COMMITS_RANGE --oneline --no-merges | wc -l | tr -d ' ')
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "No new commits since last release"
+            echo "next_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Calculate recommended bump based on commits
+          BUMP_TYPE=$(conventional-recommended-bump -p conventionalcommits)
+          echo "Recommended bump: $BUMP_TYPE"
+
+          # Parse current version and apply bump
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+
+          case $BUMP_TYPE in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch|*)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          NEXT_VERSION="$major.$minor.$patch"
+          echo "Next version: $NEXT_VERSION"
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update draft release
+        uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+          version: ${{ steps.version.outputs.next_version }}
+          name: v${{ steps.version.outputs.next_version }}
+          tag: v${{ steps.version.outputs.next_version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

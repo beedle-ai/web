@@ -8,6 +8,7 @@ import { ParticleSystem } from "@/components/particles"
 import { EnvironmentLighting } from "@/components/environment/lighting"
 import { EnvironmentStatus } from "@/components/environment-status"
 import { EnvironmentTestPanel } from "@/components/environment/test-panel"
+import { ThreeErrorBoundary, ErrorBoundary } from "@/components/error-boundary"
 import { InteractiveTitle } from "@/components/interactive-title"
 import { InteractiveLogo } from "@/components/interactive-logo"
 import { useMousePerspective } from "@/lib/hooks/use-mouse-perspective"
@@ -55,11 +56,15 @@ export default function Home() {
 
       <BackgroundLayers />
       <EnvironmentLighting />
-      <EnvironmentWireframeMesh />
-      <ParticleSystem />
+      <ThreeErrorBoundary>
+        <EnvironmentWireframeMesh />
+      </ThreeErrorBoundary>
+      <ErrorBoundary componentName="Particle System" isolate>
+        <ParticleSystem />
+      </ErrorBoundary>
 
       <div className="relative flex h-full w-full items-center justify-center px-4">
-        <main className="relative z-10 text-center">
+        <main className="relative z-10 text-center" role="main" aria-label="Main content">
           <InteractiveTitle
             ref={textRef}
             isHovering={isHoveringText}

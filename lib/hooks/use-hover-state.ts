@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react"
+import type { UseHoverStateReturn } from "@/lib/types/ui"
 
-export function useHoverState() {
+export function useHoverState(): UseHoverStateReturn {
   const [isHovering, setIsHovering] = useState(false)
 
   const handleMouseEnter = useCallback(() => setIsHovering(true), [])

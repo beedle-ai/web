@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import type { RefObject } from "react"
-
-interface MousePosition {
-  x: number
-  y: number
-}
+import type { MousePosition, UseMousePerspectiveReturn } from "@/lib/types/ui"
 
 interface PerspectiveConfig {
   rotationIntensity?: {
@@ -25,7 +21,7 @@ export function useMousePerspective(
   elementRef: RefObject<HTMLElement | null>,
   isActive: boolean,
   config: PerspectiveConfig = {}
-) {
+): UseMousePerspectiveReturn {
   const [mousePos, setMousePos] = useState<MousePosition>({ x: 0, y: 0 })
   const mergedConfig = { ...DEFAULT_CONFIG, ...config }
 
@@ -59,7 +55,7 @@ export function useMousePerspective(
     }
   }, [isActive, handlePointerMove])
 
-  const perspectiveStyle = {
+  const perspectiveStyle: React.CSSProperties = {
     transform: isActive
       ? `perspective(1000px) rotateX(${-mousePos.y * mergedConfig.rotationIntensity.y}deg) rotateY(${mousePos.x * mergedConfig.rotationIntensity.x}deg) scale(${mergedConfig.scale})`
       : `perspective(1000px) rotateX(${-mousePos.y * 1}deg) rotateY(${mousePos.x * 1.5}deg) scale(1)`,

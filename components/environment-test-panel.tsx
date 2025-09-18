@@ -1,10 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo, memo } from "react"
 import { Settings, X, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Slider } from "@/components/ui/slider"
 import type { TimeOfDay, WeatherCondition } from "@/lib/types/environment"
+import {
+  ENVIRONMENT_PRESETS,
+  WEATHER_DEFAULTS,
+  TEMPERATURE_LIMITS,
+  HUMIDITY_LIMITS,
+  WIND_SPEED_LIMITS,
+} from "@/lib/constants/test-presets"
+import { ACCESSIBILITY } from "@/lib/constants/ui"
 
 interface TestOverrides {
   enabled: boolean
@@ -15,10 +23,23 @@ interface TestOverrides {
   windSpeed?: number
 }
 
-const TIME_OPTIONS: TimeOfDay[] = ["dawn", "morning", "afternoon", "evening", "night"]
-const WEATHER_OPTIONS: WeatherCondition[] = ["clear", "clouds", "rain", "snow", "fog", "storm"]
+const TIME_OPTIONS: readonly TimeOfDay[] = [
+  "dawn",
+  "morning",
+  "afternoon",
+  "evening",
+  "night",
+] as const
+const WEATHER_OPTIONS: readonly WeatherCondition[] = [
+  "clear",
+  "clouds",
+  "rain",
+  "snow",
+  "fog",
+  "storm",
+] as const
 
-export function EnvironmentTestPanel() {
+function EnvironmentTestPanelComponent() {
   const [isOpen, setIsOpen] = useState(false)
   const [overrides, setOverrides] = useState<TestOverrides>({ enabled: false })
   const [isDevelopment, setIsDevelopment] = useState(false)
@@ -58,53 +79,20 @@ export function EnvironmentTestPanel() {
     }
   }, [overrides])
 
-  if (!isDevelopment) return null
+  const quickPresets = useMemo(() => ENVIRONMENT_PRESETS, [])
 
-  const quickPresets = [
-    {
-      name: "Clear Dawn",
-      time: "dawn" as TimeOfDay,
-      weather: "clear" as WeatherCondition,
-      temp: 15,
-    },
-    {
-      name: "Rainy Afternoon",
-      time: "afternoon" as TimeOfDay,
-      weather: "rain" as WeatherCondition,
-      temp: 18,
-    },
-    {
-      name: "Snowy Night",
-      time: "night" as TimeOfDay,
-      weather: "snow" as WeatherCondition,
-      temp: -2,
-    },
-    {
-      name: "Foggy Morning",
-      time: "morning" as TimeOfDay,
-      weather: "fog" as WeatherCondition,
-      temp: 12,
-    },
-    {
-      name: "Stormy Evening",
-      time: "evening" as TimeOfDay,
-      weather: "storm" as WeatherCondition,
-      temp: 22,
-    },
-  ]
-
-  const applyPreset = (preset: (typeof quickPresets)[0]) => {
+  const applyPreset = useCallback((preset: (typeof ENVIRONMENT_PRESETS)[0]) => {
     setOverrides({
       enabled: true,
       timeOfDay: preset.time,
       weather: preset.weather,
-      temperature: preset.temp,
-      humidity: preset.weather === "rain" || preset.weather === "storm" ? 85 : 50,
-      windSpeed: preset.weather === "storm" ? 40 : preset.weather === "snow" ? 15 : 10,
+      temperature: preset.temperature,
+      humidity: preset.humidity || WEATHER_DEFAULTS.humidity[preset.weather],
+      windSpeed: preset.windSpeed || WEATHER_DEFAULTS.windSpeed[preset.weather],
     })
-  }
+  }, [])
 
-  const resetToLive = () => {
+  const resetToLive = useCallback(() => {
     setOverrides({ enabled: false })
     // Remove all overrides
     const root = document.documentElement
@@ -116,7 +104,9 @@ export function EnvironmentTestPanel() {
 
     // Force reload environment data
     window.location.reload()
-  }
+  }, [])
+
+  if (!isDevelopment) return null
 
   return (
     <>
@@ -170,12 +160,16 @@ export function EnvironmentTestPanel() {
                     ? "bg-gray-600 dark:bg-gray-400"
                     : "bg-gray-300 dark:bg-gray-600"
                 )}
+                role={ACCESSIBILITY.ROLES.SWITCH}
+                aria-checked={overrides.enabled}
+                aria-label="Toggle test mode"
               >
                 <span
                   className={cn(
                     "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
                     overrides.enabled ? "translate-x-6" : "translate-x-1"
                   )}
+                  aria-hidden="true"
                 />
               </button>
             </div>
@@ -216,6 +210,7 @@ export function EnvironmentTestPanel() {
                         })
                       }
                       className="mt-1 w-full px-3 py-2.5 sm:px-2 sm:py-1 text-base sm:text-sm bg-white/50 dark:bg-black/30 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/30 min-h-[44px] sm:min-h-0"
+                      aria-label="Select time of day"
                     >
                       <option value="">Select...</option>
                       {TIME_OPTIONS.map((time) => (
@@ -240,6 +235,7 @@ export function EnvironmentTestPanel() {
                         })
                       }
                       className="mt-1 w-full px-3 py-2.5 sm:px-2 sm:py-1 text-base sm:text-sm bg-white/50 dark:bg-black/30 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/30 min-h-[44px] sm:min-h-0"
+                      aria-label="Select weather condition"
                     >
                       <option value="">Select...</option>
                       {WEATHER_OPTIONS.map((weather) => (
@@ -253,13 +249,17 @@ export function EnvironmentTestPanel() {
                   {/* Temperature */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Temperature (°C): {overrides.temperature || 20}
+                      Temperature (°C): {overrides.temperature || TEMPERATURE_LIMITS.DEFAULT}
                     </label>
                     <Slider
-                      min={-10}
-                      max={40}
+                      min={TEMPERATURE_LIMITS.MIN}
+                      max={TEMPERATURE_LIMITS.MAX}
                       step={1}
-                      value={[overrides.temperature || 20]}
+                      value={[overrides.temperature || TEMPERATURE_LIMITS.DEFAULT]}
+                      aria-label="Temperature"
+                      aria-valuemin={TEMPERATURE_LIMITS.MIN}
+                      aria-valuemax={TEMPERATURE_LIMITS.MAX}
+                      aria-valuenow={overrides.temperature || TEMPERATURE_LIMITS.DEFAULT}
                       onValueChange={(value) =>
                         setOverrides({
                           ...overrides,
@@ -273,13 +273,17 @@ export function EnvironmentTestPanel() {
                   {/* Wind Speed */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Wind Speed (km/h): {overrides.windSpeed || 10}
+                      Wind Speed (km/h): {overrides.windSpeed || WIND_SPEED_LIMITS.DEFAULT}
                     </label>
                     <Slider
-                      min={0}
-                      max={100}
+                      min={WIND_SPEED_LIMITS.MIN}
+                      max={WIND_SPEED_LIMITS.MAX}
                       step={1}
-                      value={[overrides.windSpeed || 10]}
+                      value={[overrides.windSpeed || WIND_SPEED_LIMITS.DEFAULT]}
+                      aria-label="Wind Speed"
+                      aria-valuemin={WIND_SPEED_LIMITS.MIN}
+                      aria-valuemax={WIND_SPEED_LIMITS.MAX}
+                      aria-valuenow={overrides.windSpeed || WIND_SPEED_LIMITS.DEFAULT}
                       onValueChange={(value) =>
                         setOverrides({
                           ...overrides,
@@ -293,13 +297,17 @@ export function EnvironmentTestPanel() {
                   {/* Humidity */}
                   <div>
                     <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                      Humidity (%): {overrides.humidity || 50}
+                      Humidity (%): {overrides.humidity || HUMIDITY_LIMITS.DEFAULT}
                     </label>
                     <Slider
-                      min={0}
-                      max={100}
+                      min={HUMIDITY_LIMITS.MIN}
+                      max={HUMIDITY_LIMITS.MAX}
                       step={1}
-                      value={[overrides.humidity || 50]}
+                      value={[overrides.humidity || HUMIDITY_LIMITS.DEFAULT]}
+                      aria-label="Humidity"
+                      aria-valuemin={HUMIDITY_LIMITS.MIN}
+                      aria-valuemax={HUMIDITY_LIMITS.MAX}
+                      aria-valuenow={overrides.humidity || HUMIDITY_LIMITS.DEFAULT}
                       onValueChange={(value) =>
                         setOverrides({
                           ...overrides,
@@ -315,8 +323,9 @@ export function EnvironmentTestPanel() {
                 <button
                   onClick={resetToLive}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 sm:px-3 sm:py-2 bg-white/50 dark:bg-black/30 hover:bg-white/70 dark:hover:bg-black/50 rounded-lg backdrop-blur-sm transition-all border border-gray-200/50 dark:border-gray-700/50 text-base sm:text-sm min-h-[44px] sm:min-h-0"
+                  aria-label="Reset to live environment data"
                 >
-                  <RefreshCw className="w-3 h-3" />
+                  <RefreshCw className="w-3 h-3" aria-hidden="true" />
                   Reset to Live Data
                 </button>
               </>
@@ -334,3 +343,5 @@ export function EnvironmentTestPanel() {
     </>
   )
 }
+
+export const EnvironmentTestPanel = memo(EnvironmentTestPanelComponent)

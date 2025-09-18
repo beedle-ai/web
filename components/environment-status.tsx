@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, memo, useCallback } from "react"
 import {
   Cloud,
   CloudRain,
@@ -15,28 +15,41 @@ import {
 import { useEnvironmentContext } from "@/contexts/environment-context"
 import { formatTemperature } from "@/lib/utils/environment"
 import { cn } from "@/lib/utils"
+import { WEATHER_DISPLAY_NAMES } from "@/lib/constants/ui"
 
-export function EnvironmentStatus() {
+function EnvironmentStatusComponent() {
   const { environment, locationPermission } = useEnvironmentContext()
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
 
-  if (isDismissed) return null
-
-  const getWeatherIcon = () => {
-    switch (environment.weather) {
-      case "rain":
-        return <CloudRain className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-      case "snow":
-        return <CloudSnow className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-      case "clouds":
-        return <Cloud className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-      case "clear":
-        return <Sun className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-      default:
-        return <Cloud className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+  const weatherIcon = useMemo(() => {
+    const iconClass = "w-4 h-4 sm:w-3.5 sm:h-3.5"
+    const iconMap: Record<string, React.ReactElement> = {
+      rain: <CloudRain className={iconClass} />,
+      snow: <CloudSnow className={iconClass} />,
+      clouds: <Cloud className={iconClass} />,
+      clear: <Sun className={iconClass} />,
+      fog: <Cloud className={iconClass} />,
+      storm: <CloudRain className={iconClass} />,
     }
-  }
+    return iconMap[environment.weather] || <Cloud className={iconClass} />
+  }, [environment.weather])
+
+  const weatherDisplayName = useMemo(
+    () => WEATHER_DISPLAY_NAMES[environment.weather] || "Unknown",
+    [environment.weather]
+  )
+
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded((prev) => !prev)
+  }, [])
+
+  const handleDismiss = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsDismissed(true)
+  }, [])
+
+  if (isDismissed) return null
 
   return (
     <div
@@ -46,10 +59,13 @@ export function EnvironmentStatus() {
         "border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg",
         "text-sm sm:text-xs select-none"
       )}
+      role="status"
+      aria-live="polite"
+      aria-label="Environment status"
     >
       {/* Collapsed view */}
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={toggleExpanded}
         className={cn(
           "flex items-center gap-2 px-4 py-3 sm:px-3 sm:py-2 w-full sm:w-auto sm:min-w-[180px]",
           "hover:bg-gray-50/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors",
@@ -58,22 +74,8 @@ export function EnvironmentStatus() {
         )}
       >
         <div className="flex items-center gap-2 flex-1">
-          {getWeatherIcon()}
-          <span className="font-medium">
-            {environment.weather === "clear"
-              ? "Clear"
-              : environment.weather === "clouds"
-                ? "Cloudy"
-                : environment.weather === "rain"
-                  ? "Rainy"
-                  : environment.weather === "snow"
-                    ? "Snowy"
-                    : environment.weather === "fog"
-                      ? "Foggy"
-                      : environment.weather === "storm"
-                        ? "Stormy"
-                        : "Unknown"}
-          </span>
+          {weatherIcon}
+          <span className="font-medium">{weatherDisplayName}</span>
           <span className="text-gray-500 dark:text-gray-400 hidden sm:inline">•</span>
           <span className="text-gray-600 dark:text-gray-300 hidden sm:inline">
             {formatTemperature(environment.temperature)}
@@ -104,13 +106,11 @@ export function EnvironmentStatus() {
               Environment Theming Active
             </div>
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setIsDismissed(true)
-              }}
+              onClick={handleDismiss}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="Dismiss environment status"
             >
-              <X className="w-4 h-4 sm:w-3 sm:h-3" />
+              <X className="w-4 h-4 sm:w-3 sm:h-3" aria-hidden="true" />
             </button>
           </div>
 
@@ -155,3 +155,5 @@ export function EnvironmentStatus() {
     </div>
   )
 }
+
+export const EnvironmentStatus = memo(EnvironmentStatusComponent)

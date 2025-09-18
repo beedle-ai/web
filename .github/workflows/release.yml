@@ -39,7 +39,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HUSKY: 0
-        run: |
-          # Install prettier globally for semantic-release to use
-          pnpm add -g prettier
-          pnpm dlx semantic-release
+        run: pnpm dlx semantic-release

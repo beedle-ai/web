@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 import { useTheme } from "next-themes"
 import { PAPER } from "@/lib/render/paper"
 
@@ -20,6 +20,10 @@ function hourIdFromMinuteId(id: string): string {
   return id.slice(0, -2)
 }
 
+const subscribeToNothing = () => () => {}
+const isClient = () => true
+const isServer = () => false
+
 export function WallSheet({
   id,
   inkColour,
@@ -28,11 +32,8 @@ export function WallSheet({
   future = false,
 }: WallSheetProps) {
   const { resolvedTheme } = useTheme()
-  const [theme, setTheme] = useState<"light" | "dark" | null>(null)
-
-  useEffect(() => {
-    setTheme(resolvedTheme === "dark" ? "dark" : "light")
-  }, [resolvedTheme])
+  const mounted = useSyncExternalStore(subscribeToNothing, isClient, isServer)
+  const theme = mounted ? (resolvedTheme === "dark" ? "dark" : "light") : null
 
   const href = variant === "wall" ? `/hour/${hourIdFromMinuteId(id)}` : `/m/${id}`
   const cellClassName = variant === "hour" ? "wall-cell wall-cell-compact" : "wall-cell"

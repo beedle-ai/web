@@ -38,8 +38,6 @@ export function Sheet({ piece, progress, showPen = true }: SheetProps) {
   const [tip, setTip] = useState<PenTip | null>(null)
   const reducedMotion = useReducedMotion()
 
-  progressRef.current = progress
-
   useEffect(() => {
     const canvas = canvasRef.current
     const container = containerRef.current
@@ -74,6 +72,7 @@ export function Sheet({ piece, progress, showPen = true }: SheetProps) {
   }, [piece])
 
   useEffect(() => {
+    progressRef.current = progress
     const next = painterRef.current?.paint(progress) ?? null
     setTip(next)
     if (!showPen) return

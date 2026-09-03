@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useSyncExternalStore } from "react"
 import { plotterSound } from "./plotter-sound"
 
 const STORAGE_KEY = "beedle.sound"
@@ -21,12 +21,24 @@ function writePreference(enabled: boolean): void {
   }
 }
 
+const listeners = new Set<() => void>()
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+function notify(): void {
+  listeners.forEach((listener) => listener())
+}
+
+const readOnServer = () => false
+
 export function useSoundPreference(): [boolean, () => void] {
-  const [enabled, setEnabled] = useState(false)
+  const enabled = useSyncExternalStore(subscribe, readPreference, readOnServer)
 
   useEffect(() => {
-    if (!readPreference()) return
-    setEnabled(true)
+    if (!enabled || plotterSound.enabled) return
     const arm = () => {
       void plotterSound.enable()
     }
@@ -36,7 +48,7 @@ export function useSoundPreference(): [boolean, () => void] {
       window.removeEventListener("pointerdown", arm)
       window.removeEventListener("keydown", arm)
     }
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
     const silenceWhenHidden = () => {
@@ -47,13 +59,11 @@ export function useSoundPreference(): [boolean, () => void] {
   }, [])
 
   const toggle = useCallback(() => {
-    setEnabled((current) => {
-      const next = !current
-      writePreference(next)
-      if (next) void plotterSound.enable()
-      else void plotterSound.disable()
-      return next
-    })
+    const next = !readPreference()
+    writePreference(next)
+    if (next) void plotterSound.enable()
+    else void plotterSound.disable()
+    notify()
   }, [])
 
   return [enabled, toggle]

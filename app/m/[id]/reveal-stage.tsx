@@ -15,12 +15,8 @@ export function RevealStage({ piece, minute }: RevealStageProps) {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    if (!piece) {
-      setProgress(0)
-      return
-    }
+    if (!piece) return
 
-    setProgress(0)
     const start = performance.now()
     let frame: number
 

@@ -5,6 +5,7 @@ import { useTheme } from "next-themes"
 import { SheetPainter } from "@/lib/render/painter"
 import type { PenTip } from "@/lib/render/painter"
 import { inkColour } from "@/lib/render/paper"
+import { plotterSound } from "@/lib/audio/plotter-sound"
 import type { Piece } from "@/lib/gen/types"
 
 interface SheetProps {
@@ -73,8 +74,15 @@ export function Sheet({ piece, progress, showPen = true }: SheetProps) {
   }, [piece])
 
   useEffect(() => {
-    setTip(painterRef.current?.paint(progress) ?? null)
-  }, [progress])
+    const next = painterRef.current?.paint(progress) ?? null
+    setTip(next)
+    if (!showPen) return
+    const size = containerRef.current?.clientWidth || 1
+    plotterSound.update(
+      next ? { x: next.x / size, y: next.y / size, pen: next.pen } : null,
+      performance.now()
+    )
+  }, [progress, showPen])
 
   const ink = piece && tip ? piece.inks[tip.pen] : undefined
   const ringColour = ink ? inkColour(ink, theme) : null

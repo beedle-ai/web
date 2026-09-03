@@ -43,3 +43,6 @@ next-env.d.ts
 # claude
 CLAUDE.md
 .claude/
+
+# Smoke test build
+.next-smoke

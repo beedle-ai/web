@@ -1,5 +1,6 @@
 import type { Point } from "../types"
 import { SHEET_MARGIN } from "../types"
+import { distance } from "../geometry"
 
 export const SAFE_MARGIN = SHEET_MARGIN + 0.004
 
@@ -35,6 +36,48 @@ export function penForValue(value: number, thresholds: readonly number[]): numbe
     pen += 1
   }
   return pen
+}
+
+export function degreesToRadians(degrees: number): number {
+  return (degrees * Math.PI) / 180
+}
+
+export function resamplePolyline(points: readonly Point[], spacing: number): Point[] {
+  if (points.length < 2) return points.slice()
+  const resampled: Point[] = [points[0]]
+  let segmentStart = points[0]
+  let carry = 0
+  for (let index = 1; index < points.length; index += 1) {
+    const segmentEnd = points[index]
+    const segmentLength = distance(segmentStart, segmentEnd)
+    if (segmentLength < 1e-12) continue
+    let travelled = 0
+    while (carry + (segmentLength - travelled) >= spacing) {
+      travelled += spacing - carry
+      const t = travelled / segmentLength
+      resampled.push({
+        x: segmentStart.x + (segmentEnd.x - segmentStart.x) * t,
+        y: segmentStart.y + (segmentEnd.y - segmentStart.y) * t,
+      })
+      carry = 0
+    }
+    carry += segmentLength - travelled
+    segmentStart = segmentEnd
+  }
+  return resampled
+}
+
+export function chunkPolyline(points: readonly Point[], chunkSize: number): Point[][] {
+  if (points.length < 2) return []
+  const size = Math.max(2, chunkSize)
+  if (points.length <= size) return [points.slice()]
+  const chunks: Point[][] = []
+  for (let start = 0; start < points.length - 1; start += size - 1) {
+    const end = Math.min(points.length, start + size)
+    chunks.push(points.slice(start, end))
+    if (end >= points.length) break
+  }
+  return chunks
 }
 
 export function shuffleInPlace<T>(items: T[], next: () => number): T[] {

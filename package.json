@@ -16,7 +16,8 @@
     "prepare": "husky",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "tsx scripts/preview.ts"
+    "preview": "tsx scripts/preview.ts",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",

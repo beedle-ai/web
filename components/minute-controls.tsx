@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { minuteId, minuteIndexAt } from "@/lib/gen/minute"
+import { SoundToggle } from "@/components/sound-toggle"
 
 interface MinuteControlsProps {
   minute: number | null
@@ -96,6 +97,7 @@ export function MinuteControls({ minute, progress }: MinuteControlsProps) {
           </Link>
         )}
         <span className="local-time">{localTime} local</span>
+        <SoundToggle />
       </div>
       <div className="progress-track">
         <div className="progress-fill" style={{ transform: `scaleX(${progress})` }} />

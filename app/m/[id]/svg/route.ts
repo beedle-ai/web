@@ -9,19 +9,25 @@ interface SvgRouteParams {
   params: Promise<{ id: string }>
 }
 
-export async function GET(_request: Request, { params }: SvgRouteParams) {
+const CACHE_CONTROL = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
+
+export async function GET(request: Request, { params }: SvgRouteParams) {
   const { id } = await params
   const minute = parseMinuteId(id)
   if (minute === null) return new NextResponse(null, { status: 404 })
   if (minute > minuteIndexAt(new Date())) return new NextResponse(null, { status: 404 })
 
-  const piece = generatePiece(minute)
-  const svg = pieceToSvg(piece)
+  const query = new URL(request.url).searchParams
+  const theme = query.get("theme") === "dark" ? "dark" : "light"
+  const paper = query.get("paper") !== "0"
+  const download = query.get("download") === "1"
 
-  return new NextResponse(svg, {
-    headers: {
-      "Content-Type": "image/svg+xml",
-      "Content-Disposition": `attachment; filename="beedle-${id}.svg"`,
-    },
-  })
+  const svg = pieceToSvg(generatePiece(minute), { theme, paper })
+  const headers: Record<string, string> = {
+    "Content-Type": "image/svg+xml",
+    "Cache-Control": CACHE_CONTROL,
+  }
+  if (download) headers["Content-Disposition"] = `attachment; filename="beedle-${id}.svg"`
+
+  return new NextResponse(svg, { headers })
 }

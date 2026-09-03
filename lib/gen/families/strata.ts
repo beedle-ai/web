@@ -1,22 +1,61 @@
-import type { Family, Noise, Rng, Stroke } from "../types"
+import type { Family, Noise, Point, Rng, Stroke } from "../types"
 import { SAFE_MARGIN, clamp, evenThresholds, penForValue, smoothstep } from "./shared"
+import { type Segment, averageOf, polarPoint, swapAxes, visibleSegments } from "./shared-c"
 
-type StrataStyle = "rolling" | "mountain" | "pulsar" | "hill"
+type LinearStyle =
+  | "rolling"
+  | "mountain"
+  | "pulsar"
+  | "hill"
+  | "twinHorizon"
+  | "densityGradient"
+  | "band"
+  | "terrace"
 
-interface HeightParams {
-  frequency: number
-  rowFrequency: number
-  octaves: number
-  sharp: boolean
-  amplitude: number
-  hillCentre: number
-  hillHalfWidth: number
+type StrataStyle = LinearStyle | "dithered" | "radial" | "vertical"
+
+const STYLES: readonly StrataStyle[] = [
+  "rolling",
+  "mountain",
+  "pulsar",
+  "hill",
+  "twinHorizon",
+  "densityGradient",
+  "band",
+  "terrace",
+  "dithered",
+  "radial",
+  "vertical",
+]
+
+const VERTICAL_CANDIDATES: readonly LinearStyle[] = [
+  "rolling",
+  "mountain",
+  "pulsar",
+  "hill",
+  "twinHorizon",
+  "densityGradient",
+  "band",
+  "terrace",
+]
+
+interface ProfileStyle {
   weight: (rowFraction: number) => number
+  heightAt: (columnFraction: number, row: number, rowFraction: number) => number
+  rowFractionAt?: (row: number, lineCount: number) => number
+  includeRow?: (row: number, rowFraction: number) => boolean
+  quantiseStep?: number
+  maxSlope?: number
+  baselineAt: (rowFraction: number) => number
+  pointAt: (columnFraction: number, value: number) => Point
+  clampRange: readonly [number, number]
+  penForSegment: (rowFraction: number, segment: Segment, heights: readonly number[]) => number
 }
 
-interface Segment {
-  start: number
-  end: number
+interface LinearBuild {
+  lineCount: number
+  columns: number
+  style: ProfileStyle
 }
 
 function edgeTaper(rowFraction: number): number {
@@ -36,152 +75,523 @@ function hillBump(x: number, centre: number, halfWidth: number): number {
   return Math.cos((t * Math.PI) / 2) ** 2
 }
 
-function chooseStyle(rng: Rng): StrataStyle {
-  const roll = rng.next()
-  if (roll < 0.15) return "rolling"
-  if (roll < 0.5) return "mountain"
-  if (roll < 0.75) return "pulsar"
-  return "hill"
+function softAbs(value: number, softness: number): number {
+  return Math.sqrt(value * value + softness * softness) - softness
 }
 
-function heightAt(noise: Noise, x: number, rowKey: number, params: HeightParams): number {
-  if (params.hillHalfWidth > 0) {
-    const bump = hillBump(x, params.hillCentre, params.hillHalfWidth)
-    const texture = noise.fbm(x * params.frequency, rowKey * params.rowFrequency, params.octaves)
-    return params.amplitude * bump + params.amplitude * 0.12 * texture
+function capSlope(heights: number[], maxSlope: number): void {
+  for (let column = 1; column < heights.length; column += 1) {
+    const delta = clamp(heights[column] - heights[column - 1], -maxSlope, maxSlope)
+    heights[column] = heights[column - 1] + delta
   }
-  const sample = noise.fbm(x * params.frequency, rowKey * params.rowFrequency, params.octaves)
-  const magnitude = params.sharp ? Math.abs(sample) : sample
-  return magnitude * params.amplitude
 }
 
-function visibleSegments(ys: readonly number[], horizon: Float64Array): Segment[] {
-  const segments: Segment[] = []
-  let start = -1
-  for (let column = 0; column < ys.length; column += 1) {
-    const visible = ys[column] < horizon[column]
-    if (visible) {
-      if (start === -1) start = column
-      horizon[column] = ys[column]
-      continue
-    }
-    if (start !== -1) {
-      segments.push({ start, end: column - 1 })
-      start = -1
-    }
-  }
-  if (start !== -1) segments.push({ start, end: ys.length - 1 })
-  return segments
-}
-
-function averageHeight(heights: readonly number[], segment: Segment): number {
-  let total = 0
-  for (let column = segment.start; column <= segment.end; column += 1) total += heights[column]
-  return total / (segment.end - segment.start + 1)
-}
-
-function choosePen(
+function makePenForSegment(
   penCount: number,
   useHeightFade: boolean,
-  rowFraction: number,
-  segment: Segment,
-  heights: readonly number[],
-  amplitude: number
-): number {
-  if (penCount <= 1) return 0
+  heightReference: number
+): (rowFraction: number, segment: Segment, heights: readonly number[]) => number {
+  if (penCount <= 1) return () => 0
   if (useHeightFade) {
-    const peak = averageHeight(heights, segment)
-    return penForValue(peak, evenThresholds(0, amplitude * 0.7, penCount))
+    const thresholds = evenThresholds(0, heightReference * 0.7, penCount)
+    return (_rowFraction, segment, heights) => penForValue(averageOf(heights, segment), thresholds)
   }
-  return penForValue(rowFraction, evenThresholds(0, 1, penCount))
+  const thresholds = evenThresholds(0, 1, penCount)
+  return (rowFraction) => penForValue(rowFraction, thresholds)
 }
 
-function renderRows(
-  lineCount: number,
-  columns: number,
-  params: HeightParams,
-  penCount: number,
-  useHeightFade: boolean,
-  noise: Noise
-): Stroke[] {
+function renderProfile(lineCount: number, columns: number, style: ProfileStyle): Stroke[] {
+  const rowFractionAt = style.rowFractionAt ?? ((row, count) => row / (count - 1))
   const horizon = new Float64Array(columns).fill(Infinity)
   const strokes: Stroke[] = []
 
   for (let row = lineCount - 1; row >= 0; row -= 1) {
-    const rowFraction = row / (lineCount - 1)
-    const baseline = SAFE_MARGIN + rowFraction * (1 - 2 * SAFE_MARGIN)
-    const heights: number[] = new Array(columns)
-    const ys: number[] = new Array(columns)
+    const rowFraction = rowFractionAt(row, lineCount)
+    if (style.includeRow && !style.includeRow(row, rowFraction)) continue
+
+    const baseline = style.baselineAt(rowFraction)
+    const heights = new Array<number>(columns)
+    const values = new Array<number>(columns)
 
     for (let column = 0; column < columns; column += 1) {
-      const x = SAFE_MARGIN + (column / (columns - 1)) * (1 - 2 * SAFE_MARGIN)
-      const height = heightAt(noise, x, row, params) * params.weight(rowFraction)
+      const columnFraction = column / (columns - 1)
+      let height = style.heightAt(columnFraction, row, rowFraction) * style.weight(rowFraction)
+      if (style.quantiseStep) height = Math.round(height / style.quantiseStep) * style.quantiseStep
       heights[column] = height
-      ys[column] = clamp(baseline - height, SAFE_MARGIN, 1 - SAFE_MARGIN)
     }
 
-    const segments = visibleSegments(ys, horizon)
+    if (style.maxSlope !== undefined) capSlope(heights, style.maxSlope)
+
+    for (let column = 0; column < columns; column += 1) {
+      values[column] = clamp(baseline - heights[column], style.clampRange[0], style.clampRange[1])
+    }
+
+    const segments = visibleSegments(values, horizon)
     for (const segment of segments) {
       if (segment.end - segment.start < 1) continue
-      const points = []
+      const points: Point[] = []
       for (let column = segment.start; column <= segment.end; column += 1) {
-        const x = SAFE_MARGIN + (column / (columns - 1)) * (1 - 2 * SAFE_MARGIN)
-        points.push({ x, y: ys[column] })
+        points.push(style.pointAt(column / (columns - 1), values[column]))
       }
-      const pen = choosePen(
-        penCount,
-        useHeightFade,
-        rowFraction,
-        segment,
-        heights,
-        params.amplitude
-      )
-      strokes.push({ pen, points })
+      strokes.push({ pen: style.penForSegment(rowFraction, segment, heights), points })
     }
   }
 
   return strokes
 }
 
+function generateWithRetry(
+  build: (lineCount: number) => Stroke[],
+  initialLineCount: number,
+  maxLineCount: number
+): Stroke[] {
+  let lineCount = initialLineCount
+  let strokes = build(lineCount)
+  while (strokes.length < 100 && lineCount < maxLineCount) {
+    lineCount = Math.round(lineCount * 1.5)
+    strokes = build(lineCount)
+  }
+  return strokes
+}
+
+function horizontalPointAt(columnFraction: number, value: number): Point {
+  return { x: SAFE_MARGIN + columnFraction * (1 - 2 * SAFE_MARGIN), y: value }
+}
+
+function horizontalBaselineAt(rowFraction: number): number {
+  return SAFE_MARGIN + rowFraction * (1 - 2 * SAFE_MARGIN)
+}
+
+const HORIZONTAL_CLAMP: readonly [number, number] = [SAFE_MARGIN, 1 - SAFE_MARGIN]
+
+function buildRolling(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const amplitude = rng.range(0.02, 0.05)
+  const frequency = rng.range(1.4, 3.4)
+  const rowFrequency = rng.range(0.05, 0.18)
+  const octaves = rng.int(2, 4)
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.4), amplitude)
+
+  return {
+    lineCount: rng.int(110, 160),
+    columns: 220,
+    style: {
+      weight: edgeTaper,
+      heightAt: (columnFraction, row) =>
+        noise.fbm(columnFraction * frequency, row * rowFrequency, octaves) * amplitude,
+      baselineAt: horizontalBaselineAt,
+      pointAt: horizontalPointAt,
+      clampRange: HORIZONTAL_CLAMP,
+      penForSegment,
+    },
+  }
+}
+
+function buildMountain(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const amplitude = rng.range(0.16, 0.34)
+  const frequency = rng.range(1.5, 3)
+  const rowFrequency = rng.range(0.05, 0.14)
+  const octaves = rng.int(1, 2)
+  const softness = rng.range(0.08, 0.18)
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.4), amplitude)
+
+  return {
+    lineCount: rng.int(60, 110),
+    columns: 220,
+    style: {
+      weight: edgeTaper,
+      heightAt: (columnFraction, row) =>
+        softAbs(noise.fbm(columnFraction * frequency, row * rowFrequency, octaves), softness) *
+        amplitude,
+      maxSlope: 0.02,
+      baselineAt: horizontalBaselineAt,
+      pointAt: horizontalPointAt,
+      clampRange: HORIZONTAL_CLAMP,
+      penForSegment,
+    },
+  }
+}
+
+function buildPulsar(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const amplitude = rng.range(0.16, 0.34)
+  const frequency = rng.range(1.4, 3.4)
+  const rowFrequency = rng.range(0.05, 0.18)
+  const octaves = rng.int(2, 4)
+  const bandCentre = rng.range(0.42, 0.58)
+  const bandWidthValue = rng.range(0.06, 0.11)
+  const bandFloor = 0.02
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.4), amplitude)
+
+  return {
+    lineCount: rng.int(70, 130),
+    columns: 220,
+    style: {
+      weight: (rowFraction) =>
+        edgeTaper(rowFraction) *
+        Math.max(bandFloor, bandWeight(rowFraction, bandCentre, bandWidthValue)),
+      heightAt: (columnFraction, row) =>
+        Math.abs(noise.fbm(columnFraction * frequency, row * rowFrequency, octaves)) * amplitude,
+      baselineAt: horizontalBaselineAt,
+      pointAt: horizontalPointAt,
+      clampRange: HORIZONTAL_CLAMP,
+      penForSegment,
+    },
+  }
+}
+
+function buildHill(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const amplitude = rng.range(0.16, 0.34)
+  const frequency = rng.range(1.4, 3.4)
+  const rowFrequency = rng.range(0.05, 0.18)
+  const octaves = rng.int(2, 4)
+  const hillCentre = rng.range(0.3, 0.7)
+  const hillHalfWidth = rng.range(0.22, 0.4)
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.4), amplitude)
+
+  return {
+    lineCount: rng.int(60, 100),
+    columns: 220,
+    style: {
+      weight: edgeTaper,
+      heightAt: (columnFraction, row) => {
+        const bump = hillBump(columnFraction, hillCentre, hillHalfWidth)
+        const texture = noise.fbm(columnFraction * frequency, row * rowFrequency, octaves)
+        return amplitude * bump + amplitude * 0.12 * texture
+      },
+      baselineAt: horizontalBaselineAt,
+      pointAt: horizontalPointAt,
+      clampRange: HORIZONTAL_CLAMP,
+      penForSegment,
+    },
+  }
+}
+
+function buildTwinHorizon(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const amplitude = rng.range(0.14, 0.28)
+  const frequency = rng.range(1.5, 3)
+  const rowFrequency = rng.range(0.05, 0.14)
+  const octaves = rng.int(1, 2)
+  const centreA = rng.range(0.14, 0.32)
+  const centreB = rng.range(0.68, 0.86)
+  const halfWidthA = rng.range(0.14, 0.24)
+  const halfWidthB = rng.range(0.14, 0.24)
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.5), amplitude)
+
+  return {
+    lineCount: rng.int(55, 95),
+    columns: 220,
+    style: {
+      weight: edgeTaper,
+      heightAt: (columnFraction, row) => {
+        const bumpA = hillBump(columnFraction, centreA, halfWidthA)
+        const bumpB = hillBump(columnFraction, centreB, halfWidthB)
+        const texture = noise.fbm(columnFraction * frequency, row * rowFrequency, octaves)
+        return amplitude * Math.max(bumpA, bumpB) + amplitude * 0.1 * texture
+      },
+      maxSlope: 0.02,
+      baselineAt: horizontalBaselineAt,
+      pointAt: horizontalPointAt,
+      clampRange: HORIZONTAL_CLAMP,
+      penForSegment,
+    },
+  }
+}
+
+function buildDensityGradient(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const amplitude = rng.range(0.05, 0.16)
+  const frequency = rng.range(1.6, 3.4)
+  const rowFrequency = rng.range(0.06, 0.2)
+  const octaves = rng.int(2, 4)
+  const threshold = rng.range(0.35, 0.62)
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.3), amplitude)
+
+  return {
+    lineCount: rng.int(120, 160),
+    columns: 220,
+    style: {
+      weight: edgeTaper,
+      heightAt: (columnFraction, row) =>
+        noise.fbm(columnFraction * frequency, row * rowFrequency, octaves) * amplitude,
+      includeRow: (row, rowFraction) => rowFraction >= threshold || row % 2 === 0,
+      baselineAt: horizontalBaselineAt,
+      pointAt: horizontalPointAt,
+      clampRange: HORIZONTAL_CLAMP,
+      penForSegment,
+    },
+  }
+}
+
+function buildBand(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const amplitude = rng.range(0.02, 0.05)
+  const frequency = rng.range(1.6, 3.6)
+  const rowFrequency = rng.range(0.08, 0.22)
+  const octaves = rng.int(2, 3)
+  const bandSpan = rng.range(0.14, 0.26)
+  const bandStart = rng.range(0.06, 0.94 - bandSpan)
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.4), amplitude)
+
+  return {
+    lineCount: rng.int(90, 150),
+    columns: 220,
+    style: {
+      weight: () => 1,
+      heightAt: (columnFraction, row) =>
+        noise.fbm(columnFraction * frequency, row * rowFrequency, octaves) * amplitude,
+      rowFractionAt: (row, lineCount) => bandStart + (row / (lineCount - 1)) * bandSpan,
+      baselineAt: horizontalBaselineAt,
+      pointAt: horizontalPointAt,
+      clampRange: HORIZONTAL_CLAMP,
+      penForSegment,
+    },
+  }
+}
+
+function buildTerrace(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const amplitude = rng.range(0.18, 0.32)
+  const frequency = rng.range(1.2, 2.6)
+  const rowFrequency = rng.range(0.06, 0.16)
+  const octaves = rng.int(2, 3)
+  const steps = rng.int(3, 7)
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.5), amplitude)
+
+  return {
+    lineCount: rng.int(35, 70),
+    columns: 220,
+    style: {
+      weight: edgeTaper,
+      heightAt: (columnFraction, row) =>
+        Math.abs(noise.fbm(columnFraction * frequency, row * rowFrequency, octaves)) * amplitude,
+      quantiseStep: amplitude / steps,
+      baselineAt: horizontalBaselineAt,
+      pointAt: horizontalPointAt,
+      clampRange: HORIZONTAL_CLAMP,
+      penForSegment,
+    },
+  }
+}
+
+const LINEAR_BUILDERS: Record<
+  LinearStyle,
+  (rng: Rng, noise: Noise, penCount: number) => LinearBuild
+> = {
+  rolling: buildRolling,
+  mountain: buildMountain,
+  pulsar: buildPulsar,
+  hill: buildHill,
+  twinHorizon: buildTwinHorizon,
+  densityGradient: buildDensityGradient,
+  band: buildBand,
+  terrace: buildTerrace,
+}
+
+function generateLinearStyle(
+  style: LinearStyle,
+  rng: Rng,
+  noise: Noise,
+  penCount: number
+): Stroke[] {
+  const built = LINEAR_BUILDERS[style](rng, noise, penCount)
+  return generateWithRetry(
+    (lineCount) => renderProfile(lineCount, built.columns, built.style),
+    built.lineCount,
+    420
+  )
+}
+
+function buildRadial(rng: Rng, noise: Noise, penCount: number): LinearBuild {
+  const centre: Point = { x: rng.range(0.42, 0.58), y: rng.range(0.42, 0.58) }
+  const marginDistance = Math.min(centre.x, centre.y, 1 - centre.x, 1 - centre.y) - SAFE_MARGIN
+  const maxRadius = Math.max(marginDistance, 0.12)
+  const minRadius = maxRadius * rng.range(0.05, 0.14)
+  const amplitude = maxRadius * rng.range(0.08, 0.22)
+  const frequency = rng.range(1.5, 3)
+  const radialShift = rng.range(0.15, 0.4)
+  const octaves = rng.int(1, 2)
+  const penForSegment = makePenForSegment(penCount, rng.chance(0.4), amplitude)
+
+  return {
+    lineCount: rng.int(45, 90),
+    columns: 240,
+    style: {
+      weight: edgeTaper,
+      heightAt: (columnFraction, row) => {
+        const angle = columnFraction * Math.PI * 2
+        return (
+          noise.fbm(
+            Math.cos(angle) * frequency + row * radialShift,
+            Math.sin(angle) * frequency,
+            octaves
+          ) * amplitude
+        )
+      },
+      maxSlope: 0.02,
+      baselineAt: (rowFraction) => minRadius + rowFraction * (maxRadius - minRadius),
+      pointAt: (columnFraction, value) => polarPoint(centre, value, columnFraction * Math.PI * 2),
+      clampRange: [minRadius, maxRadius],
+      penForSegment,
+    },
+  }
+}
+
+function generateRadialStyle(rng: Rng, noise: Noise, penCount: number): Stroke[] {
+  const built = buildRadial(rng, noise, penCount)
+  return generateWithRetry(
+    (lineCount) => renderProfile(lineCount, built.columns, built.style),
+    built.lineCount,
+    360
+  )
+}
+
+interface DitheredParams {
+  lineCount: number
+  columns: number
+  amplitude: number
+  frequency: number
+  rowFrequency: number
+  octaves: number
+  boundaryHeight: number
+  ditherAmplitude: number
+  ditherFrequency: number
+}
+
+function buildDitheredParams(rng: Rng): DitheredParams {
+  return {
+    lineCount: rng.int(80, 140),
+    columns: 220,
+    amplitude: rng.range(0.14, 0.3),
+    frequency: rng.range(1.5, 3),
+    rowFrequency: rng.range(0.05, 0.14),
+    octaves: rng.int(1, 2),
+    boundaryHeight: rng.range(-0.06, 0.06),
+    ditherAmplitude: rng.range(0.02, 0.06),
+    ditherFrequency: rng.range(3, 7),
+  }
+}
+
+function ditheredHeightAt(
+  noise: Noise,
+  columnFraction: number,
+  row: number,
+  params: DitheredParams
+): number {
+  return (
+    noise.fbm(columnFraction * params.frequency, row * params.rowFrequency, params.octaves) *
+    params.amplitude
+  )
+}
+
+function ditheredPenAt(
+  noise: Noise,
+  columnFraction: number,
+  row: number,
+  height: number,
+  params: DitheredParams,
+  penCount: number
+): number {
+  if (penCount <= 1) return 0
+  const dither =
+    (noise.fbm(columnFraction * params.ditherFrequency + 41, row * 0.31 + 17, 2) - 0.5) *
+    2 *
+    params.ditherAmplitude
+  return height + dither > params.boundaryHeight ? 1 % penCount : 0
+}
+
+function ditheredRuns(
+  noise: Noise,
+  penCount: number,
+  params: DitheredParams,
+  row: number,
+  heights: readonly number[],
+  values: readonly number[],
+  segment: Segment
+): Stroke[] {
+  const strokes: Stroke[] = []
+  let runStart = segment.start
+  let runPen = ditheredPenAt(
+    noise,
+    segment.start / (params.columns - 1),
+    row,
+    heights[segment.start],
+    params,
+    penCount
+  )
+
+  const flush = (end: number): void => {
+    if (end - runStart < 1) return
+    const points: Point[] = []
+    for (let column = runStart; column <= end; column += 1) {
+      points.push(horizontalPointAt(column / (params.columns - 1), values[column]))
+    }
+    strokes.push({ pen: runPen, points })
+  }
+
+  for (let column = segment.start + 1; column <= segment.end; column += 1) {
+    const columnFraction = column / (params.columns - 1)
+    const pen = ditheredPenAt(noise, columnFraction, row, heights[column], params, penCount)
+    if (pen === runPen) continue
+    flush(column - 1)
+    runStart = column
+    runPen = pen
+  }
+  flush(segment.end)
+  return strokes
+}
+
+function renderDithered(noise: Noise, penCount: number, params: DitheredParams): Stroke[] {
+  const { lineCount, columns } = params
+  const horizon = new Float64Array(columns).fill(Infinity)
+  const strokes: Stroke[] = []
+
+  for (let row = lineCount - 1; row >= 0; row -= 1) {
+    const rowFraction = row / (lineCount - 1)
+    const baseline = horizontalBaselineAt(rowFraction)
+    const taper = edgeTaper(rowFraction)
+    const heights = new Array<number>(columns)
+    const values = new Array<number>(columns)
+
+    for (let column = 0; column < columns; column += 1) {
+      const columnFraction = column / (columns - 1)
+      heights[column] = ditheredHeightAt(noise, columnFraction, row, params) * taper
+    }
+
+    capSlope(heights, 0.02)
+
+    for (let column = 0; column < columns; column += 1) {
+      values[column] = clamp(baseline - heights[column], SAFE_MARGIN, 1 - SAFE_MARGIN)
+    }
+
+    const segments = visibleSegments(values, horizon)
+    for (const segment of segments) {
+      if (segment.end - segment.start < 1) continue
+      strokes.push(...ditheredRuns(noise, penCount, params, row, heights, values, segment))
+    }
+  }
+
+  return strokes
+}
+
+function generateDitheredStyle(rng: Rng, noise: Noise, penCount: number): Stroke[] {
+  const params = buildDitheredParams(rng)
+  return generateWithRetry(
+    (lineCount) => renderDithered(noise, penCount, { ...params, lineCount }),
+    params.lineCount,
+    280
+  )
+}
+
+function generateVerticalStyle(rng: Rng, noise: Noise, penCount: number): Stroke[] {
+  const innerStyle = rng.pick(VERTICAL_CANDIDATES)
+  const strokes = generateLinearStyle(innerStyle, rng, noise, penCount)
+  return strokes.map((stroke) => ({ ...stroke, points: stroke.points.map(swapAxes) }))
+}
+
 export const strata: Family = {
   name: "strata",
   weight: 1,
   generate: ({ rng, noise, penCount }) => {
-    const style = chooseStyle(rng)
-    const sharp = style === "mountain" || style === "pulsar"
-    const isHill = style === "hill"
-    const columns = 220
-    const amplitude = style === "rolling" ? rng.range(0.02, 0.05) : rng.range(0.16, 0.34)
-    const bandCentre = rng.range(0.42, 0.58)
-    const bandWidth = rng.range(0.06, 0.11)
-    const bandFloor = 0.02
-    const useHeightFade = rng.chance(0.4)
-
-    const weight = (rowFraction: number): number => {
-      const taper = edgeTaper(rowFraction)
-      if (style !== "pulsar") return taper
-      return taper * Math.max(bandFloor, bandWeight(rowFraction, bandCentre, bandWidth))
-    }
-
-    const params: HeightParams = {
-      frequency: rng.range(1.4, 3.4),
-      rowFrequency: rng.range(0.05, 0.18),
-      octaves: rng.int(2, 4),
-      sharp,
-      amplitude,
-      hillCentre: isHill ? rng.range(0.3, 0.7) : 0,
-      hillHalfWidth: isHill ? rng.range(0.22, 0.4) : 0,
-      weight,
-    }
-
-    let lineCount = style === "rolling" ? rng.int(95, 150) : rng.int(65, 120)
-    let strokes = renderRows(lineCount, columns, params, penCount, useHeightFade, noise)
-
-    while (strokes.length < 100 && lineCount < 420) {
-      lineCount = Math.round(lineCount * 1.5)
-      strokes = renderRows(lineCount, columns, params, penCount, useHeightFade, noise)
-    }
-
-    return strokes
+    const style = rng.pick(STYLES)
+    if (style === "vertical") return generateVerticalStyle(rng, noise, penCount)
+    if (style === "radial") return generateRadialStyle(rng, noise, penCount)
+    if (style === "dithered") return generateDitheredStyle(rng, noise, penCount)
+    return generateLinearStyle(style, rng, noise, penCount)
   },
 }

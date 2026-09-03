@@ -16,6 +16,8 @@ type StreamStyle = (typeof STYLES)[number]
 
 const MIN_STROKE_LENGTH = 0.04
 const CURL_EPSILON = 0.003
+const MAX_HEADING_ROTATION = 1.5 * Math.PI * 2
+const SELF_EXCLUSION_FACTOR = 4
 
 interface FieldParams {
   frequency: number
@@ -123,6 +125,13 @@ function stepPoint(point: Point, angle: number, direction: number, stepSize: num
   }
 }
 
+function normalisedAngleDelta(angle: number, previousAngle: number): number {
+  const delta = (angle - previousAngle) % (Math.PI * 2)
+  if (delta > Math.PI) return delta - Math.PI * 2
+  if (delta < -Math.PI) return delta + Math.PI * 2
+  return delta
+}
+
 interface TraceResult {
   points: Point[]
   curvature: number
@@ -138,23 +147,42 @@ function traceHalf(
   region: Region
 ): TraceResult {
   const points: Point[] = []
+  const selfGrid = new SpatialGrid(integration.spacing)
+  const pendingSelfPoints: Array<{ point: Point; length: number }> = []
+  const selfExclusionArc = integration.spacing * SELF_EXCLUSION_FACTOR
   let current = seed
   let previousAngle: number | null = null
   let length = 0
   let curvatureTotal = 0
   let curvatureSamples = 0
 
+  const ageIntoSelfGrid = (): void => {
+    while (
+      pendingSelfPoints.length > 0 &&
+      length - pendingSelfPoints[0].length > selfExclusionArc
+    ) {
+      const aged = pendingSelfPoints.shift()
+      if (aged) selfGrid.insert(aged.point)
+    }
+  }
+
   while (length < integration.maxLength) {
+    if (curvatureTotal > MAX_HEADING_ROTATION) break
+
     const angle = fieldAngle(noise, current, field)
     const next = stepPoint(current, angle, direction, integration.stepSize)
     if (!isInsideSheet(next, SAFE_MARGIN)) break
     if (!region.contains(next)) break
     if (!grid.isFarFrom(next, integration.spacing)) break
 
+    ageIntoSelfGrid()
+    if (!selfGrid.isFarFrom(next, integration.spacing)) break
+
     points.push(next)
     length += integration.stepSize
+    pendingSelfPoints.push({ point: next, length })
     if (previousAngle !== null) {
-      curvatureTotal += Math.abs(angle - previousAngle)
+      curvatureTotal += Math.abs(normalisedAngleDelta(angle, previousAngle))
       curvatureSamples += 1
     }
     previousAngle = angle

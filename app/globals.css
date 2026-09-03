@@ -319,6 +319,20 @@
   inset: 0;
 }
 
+.numerals-zone {
+  position: absolute;
+  left: 0.06em;
+  top: 0;
+  transform: translateY(-160%);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--text);
+  white-space: nowrap;
+}
+
 .numerals-outline {
   color: transparent;
   -webkit-text-stroke: 1px var(--ink-0);
@@ -372,6 +386,14 @@
 
 .local-time {
   color: var(--text-strong);
+}
+
+.sound-toggle {
+  color: var(--text);
+}
+
+.sound-toggle[aria-pressed="true"] {
+  color: var(--ink-0);
 }
 
 .progress-track {
@@ -486,4 +508,210 @@
   color: var(--text-strong);
   background-color: var(--desk);
   padding: 0 2px;
+}
+
+/* ---- app/today (wall) and app/archive "your minute" additions ---- */
+
+.your-minute {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.your-minute-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.your-minute-label {
+  color: var(--text);
+}
+
+.your-minute-input {
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--text-strong);
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  padding: 0.25em 0;
+}
+
+.your-minute-go {
+  border-bottom: 1px solid var(--hairline);
+  padding: 0.25em 0.5em;
+  color: var(--text-strong);
+}
+
+.your-minute-go:hover {
+  color: var(--ink-0);
+}
+
+.your-minute-hint {
+  margin: 0;
+  color: var(--text);
+}
+
+.wall-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2vh 4vw 4vh;
+}
+
+.wall-date {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 9vw;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+.wall-subtitle {
+  margin: 0;
+  color: var(--text);
+}
+
+.wall-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .wall-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .wall-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wall-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wall-sheet {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: transparent;
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--hairline);
+}
+
+.wall-sheet svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wall-annotation {
+  margin: 0;
+  color: var(--text);
+}
+
+.wall-sheet img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ---- app/hour additions ---- */
+
+.hour-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2vh 4vw 4vh;
+}
+
+.hour-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text);
+}
+
+.hour-wall-link:hover {
+  color: var(--ink-0);
+}
+
+.hour-heading {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 9vw;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+.hour-subtitle {
+  margin: 0;
+  color: var(--text);
+}
+
+.hour-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .hour-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .hour-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.wall-cell-compact {
+  gap: 0.35rem;
+}
+
+.wall-cell-compact .wall-annotation {
+  font-size: 9px;
+}
+
+.wall-sheet-future {
+  background-color: transparent;
+  border-color: var(--hairline);
+}
+
+@keyframes hour-sheet-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.hour-sheet-in {
+  animation: hour-sheet-in 240ms ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hour-sheet-in {
+    animation: none;
+  }
 }

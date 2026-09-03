@@ -23,6 +23,7 @@ export function Hud() {
         </p>
       </div>
       <div className="hud-nav">
+        <Link href="/today">today</Link>
         <Link href="/archive">archive</Link>
         <button
           type="button"

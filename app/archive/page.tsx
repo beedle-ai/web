@@ -2,6 +2,7 @@ import Link from "next/link"
 import type { Metadata } from "next"
 import { Hud } from "@/components/hud"
 import { DatePicker } from "./date-picker"
+import { YourMinuteForm } from "./your-minute-form"
 import { dayStartMinute, minuteId, minuteIndexAt } from "@/lib/gen/minute"
 import { createRng, hashSeed } from "@/lib/gen/random"
 import { chooseInkCount, chooseInks } from "@/lib/gen/inks"
@@ -65,6 +66,7 @@ export default async function ArchivePage({ searchParams }: ArchivePageProps) {
     <div className="page archive-page">
       <Hud />
       <main className="archive-main">
+        <YourMinuteForm />
         <div className="archive-nav">
           <Link
             href={`/archive?date=${formatDateParam(addDays(date, -1))}`}
@@ -82,7 +84,12 @@ export default async function ArchivePage({ searchParams }: ArchivePageProps) {
           <div className="archive-grid">
             {HOURS.map((hour) => (
               <div key={hour} className="archive-row">
-                <span className="archive-hour">{hour.toString().padStart(2, "0")}</span>
+                <Link
+                  href={`/hour/${minuteId(startMinute + hour * 60).slice(0, -2)}`}
+                  className="archive-hour"
+                >
+                  {hour.toString().padStart(2, "0")}
+                </Link>
                 {MINUTES.map((minuteOfHour) => {
                   const minute = startMinute + hour * 60 + minuteOfHour
                   const id = minuteId(minute)

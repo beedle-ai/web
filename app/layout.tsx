@@ -1,24 +1,23 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist_Mono, Syne } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
-import { EnvironmentProvider } from "@/contexts/environment-context"
+import { NoiseOverlay } from "@/components/noise-overlay"
 import "./globals.css"
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-})
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 })
 
+const syne = Syne({
+  variable: "--font-syne",
+  weight: "800",
+  subsets: ["latin"],
+})
+
 export const metadata: Metadata = {
   title: "beedle.ai",
-  keywords: ["AI", "artificial intelligence", "innovation"],
-  authors: [{ name: "Beedle AI" }],
-  robots: "index, follow",
+  description: "A new drawing every minute. The same drawing for everyone.",
 }
 
 export const viewport = {
@@ -35,10 +34,11 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: Readonly<RootLayoutProps>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" className={`${geistMono.variable} ${syne.variable}`} suppressHydrationWarning>
+      <body className="antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <EnvironmentProvider>{children}</EnvironmentProvider>
+          {children}
+          <NoiseOverlay />
         </ThemeProvider>
       </body>
     </html>

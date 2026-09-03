@@ -1,88 +1,47 @@
 "use client"
 
-import { useRef, useEffect } from "react"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { EnvironmentWireframeMesh } from "@/components/environment-wireframe-mesh"
-import { BackgroundLayers } from "@/components/background-layers"
-import { ParticleSystem } from "@/components/particles"
-import { EnvironmentLighting } from "@/components/environment/lighting"
-import { EnvironmentStatus } from "@/components/environment-status"
-import { EnvironmentTestPanel } from "@/components/environment/test-panel"
-import { ThreeErrorBoundary, ErrorBoundary } from "@/components/error-boundary"
-import { InteractiveTitle } from "@/components/interactive-title"
-import { InteractiveLogo } from "@/components/interactive-logo"
-import { useMousePerspective } from "@/lib/hooks/use-mouse-perspective"
-import { useHoverState } from "@/lib/hooks/use-hover-state"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Hud } from "@/components/hud"
+import { MinuteControls } from "@/components/minute-controls"
+import { MinuteStage } from "@/components/minute-stage"
+import { useMinuteClock } from "@/lib/hooks/use-minute-clock"
+import { generatePiece } from "@/lib/gen/piece"
+import type { Piece } from "@/lib/gen/types"
 
-export default function Home() {
-  const textRef = useRef<HTMLHeadingElement>(null)
-  const logoRef = useRef<HTMLDivElement>(null)
+const CROSSFADE_MS = 600
 
-  const { isHovering: isHoveringText, hoverHandlers: textHoverHandlers } = useHoverState()
-  const { isHovering: isHoveringLogo, hoverHandlers: logoHoverHandlers } = useHoverState()
+interface OutgoingPiece {
+  piece: Piece
+  minute: number
+}
+
+export default function LivePage() {
+  const clock = useMinuteClock()
+  const minute = clock?.minute ?? null
+  const progress = clock?.progress ?? 0
+  const piece = useMemo(() => (minute === null ? null : generatePiece(minute)), [minute])
+  const previousMinuteRef = useRef<number | null>(null)
+  const [outgoing, setOutgoing] = useState<OutgoingPiece | null>(null)
 
   useEffect(() => {
-    document.body.style.overflow = "hidden"
-    document.body.style.position = "fixed"
-    document.body.style.width = "100%"
-    document.body.style.height = "100%"
-
-    return () => {
-      document.body.style.overflow = ""
-      document.body.style.position = ""
-      document.body.style.width = ""
-      document.body.style.height = ""
+    if (minute === null || previousMinuteRef.current === minute) return
+    if (previousMinuteRef.current === null) {
+      previousMinuteRef.current = minute
+      return
     }
-  }, [])
+    const outgoingMinute = previousMinuteRef.current
+    previousMinuteRef.current = minute
+    setOutgoing({ piece: generatePiece(outgoingMinute), minute: outgoingMinute })
 
-  const { mousePos: textMousePos, perspectiveStyle: textPerspectiveStyle } = useMousePerspective(
-    textRef,
-    isHoveringText
-  )
-
-  const { mousePos: logoMousePos, perspectiveStyle: logoPerspectiveStyle } = useMousePerspective(
-    logoRef,
-    isHoveringLogo
-  )
+    const timeout = setTimeout(() => setOutgoing(null), CROSSFADE_MS)
+    return () => clearTimeout(timeout)
+  }, [minute])
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 transition-colors duration-500 fixed inset-0">
-      <div className="absolute top-6 right-6 z-50">
-        <ThemeToggle />
-      </div>
-
-      <EnvironmentStatus />
-      <EnvironmentTestPanel />
-
-      <BackgroundLayers />
-      <EnvironmentLighting />
-      <ThreeErrorBoundary>
-        <EnvironmentWireframeMesh />
-      </ThreeErrorBoundary>
-      <ErrorBoundary componentName="Particle System" isolate>
-        <ParticleSystem />
-      </ErrorBoundary>
-
-      <div className="relative flex h-full w-full items-center justify-center px-4">
-        <main className="relative z-10 text-center" role="main" aria-label="Main content">
-          <InteractiveTitle
-            ref={textRef}
-            isHovering={isHoveringText}
-            mousePos={textMousePos}
-            hoverHandlers={textHoverHandlers}
-            perspectiveStyle={textPerspectiveStyle}
-          />
-
-          <InteractiveLogo
-            ref={logoRef}
-            isHovering={isHoveringLogo}
-            mousePos={logoMousePos}
-            hoverHandlers={logoHoverHandlers}
-            perspectiveStyle={logoPerspectiveStyle}
-          />
-        </main>
-      </div>
+    <div className="page">
+      <Hud />
+      <MinuteStage piece={piece} minute={minute} progress={progress} outgoing={outgoing} />
+      <MinuteControls minute={minute} progress={progress} />
     </div>
   )
 }
-// Test comment

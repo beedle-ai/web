@@ -87,6 +87,30 @@ export function hatchLines(
   return strokes
 }
 
+export function isInsideRect(point: Point, rect: Rect): boolean {
+  return (
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.width &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.height
+  )
+}
+
+export function clipPolylineToRect(points: readonly Point[], rect: Rect): Point[][] {
+  const pieces: Point[][] = []
+  let current: Point[] = []
+  for (const point of points) {
+    if (isInsideRect(point, rect)) {
+      current.push(point)
+      continue
+    }
+    if (current.length > 1) pieces.push(current)
+    current = []
+  }
+  if (current.length > 1) pieces.push(current)
+  return pieces
+}
+
 export function concentricInsets(rect: Rect, step: number, pen: number, width?: number): Stroke[] {
   const strokes: Stroke[] = []
   let inset = step / 2

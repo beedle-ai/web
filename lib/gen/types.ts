@@ -15,7 +15,15 @@ export interface Ink {
   dark: string
 }
 
-export type FamilyName = "streams" | "strata" | "orbits" | "weave" | "attractor" | "partition"
+export type FamilyName =
+  | "streams"
+  | "strata"
+  | "orbits"
+  | "weave"
+  | "attractor"
+  | "partition"
+  | "harmonograph"
+  | "moire"
 
 export interface Rng {
   next: () => number

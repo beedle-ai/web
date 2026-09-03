@@ -12,16 +12,27 @@ See `docs/superpowers/specs/2026-09-03-minute-plotter-design.md` for the full de
 - `/` — the live minute, drawn progressively, rolling over automatically.
 - `/m/[id]` — a fixed minute (`id` = `YYYYMMDD-HHMM` UTC), revealed once then static.
   Prev/next links between adjacent minutes, full metadata and an Open Graph image.
-- `/m/[id]/svg` — the drawing as a downloadable SVG file.
+- `/m/[id]/svg` — the drawing as SVG. `?download=1` attaches it as a file; `?theme=dark`
+  and `?paper=0` select the ink variant and drop the paper rectangle for embedding.
 - `/m/[id]/opengraph-image` — the Open Graph image for that minute.
-- `/archive` — a day of minutes as a 60 × 24 field of swatches, `?date=YYYY-MM-DD`.
+- `/archive` — a day of minutes as a 60 × 24 field of swatches, `?date=YYYY-MM-DD`, plus a
+  "your minute" finder that jumps to any instant in the visitor's local time.
+- `/today` — the wall: the last twenty-four hours as one drawing per hour.
+
+## Sound
+
+The plotter can be heard. The `sound` toggle in the controls bar enables a synthesised
+pen-on-paper scratch tied to pen speed, a faint motor hum, a click on pen-down and a thunk
+on pen change, all built with Web Audio in `lib/audio`. It is off by default and the
+preference is remembered per browser.
 
 ## Architecture
 
 ```
 lib/gen/            pure generation: prng, noise, minute maths, inks, families, piece
 lib/render/         pure renderers: piece → SVG string; canvas progressive painter
-components/         sheet, ink dye, numerals, annotations, controls, hud, theme
+lib/audio/          the plotter sound engine and its preference hook
+components/         sheet, ink dye, numerals, annotations, controls, hud, wall sheet, theme
 app/                routes, layout, og image, svg route
 ```
 
@@ -37,6 +48,7 @@ pnpm dev
 ```bash
 pnpm check-all    # format:check, lint, type-check, test
 pnpm build
+pnpm smoke        # starts the built app and checks every route responds correctly
 ```
 
 ## Preview generated pieces

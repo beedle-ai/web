@@ -19,6 +19,7 @@ export function MinuteNumerals({ minute, progress }: MinuteNumeralsProps) {
       <span className="numerals-fill" style={{ "--fill-stop": fillStop } as React.CSSProperties}>
         {text}
       </span>
+      <span className="numerals-zone">utc</span>
     </div>
   )
 }

@@ -24,7 +24,7 @@ function Annotation({ piece, minute }: { piece: Piece | null; minute: number }) 
   return (
     <p className="stage-annotation">
       {stamp} · {piece.family} · {piece.inks.map((ink) => ink.name).join(", ")} ·{" "}
-      <Link href={`/m/${minuteId(minute)}/svg`}>svg ↓</Link>
+      <Link href={`/m/${minuteId(minute)}/svg?download=1`}>svg ↓</Link>
     </p>
   )
 }

@@ -261,3 +261,21 @@ corner. Future minutes are hairline outlines.
 Same as live, but the numerals are fully filled, the hairline is full, and `now` is a
 link home. A future minute shows empty outlined numerals and `not yet drawn` in mono in
 the sheet's centre.
+
+## Expansion (same day, after launch)
+
+- **Sound.** Optional, off by default, remembered per browser. Web Audio only: a
+  filtered-noise pen-on-paper scratch whose level follows pen speed, two quiet sine
+  hums whose pitch follows the X and Y velocities, a soft click on pen-down (detected
+  as a jump in tip position) and a low thunk plus burst on pen change. Master level is
+  low by design; the first sawtooth version was judged annoying and replaced.
+- **Two more families.** `harmonograph` (damped pendulum curves) and `moire` (interfering
+  line grids). `partition` reworked with warped hatching and motif cells and weighted
+  down; `strata` and `weave` given a variety pass so consecutive seeds read as siblings.
+- **The wall.** `/today` shows the last twenty-four hours as one drawing per hour, each
+  a lazily loaded image from `/m/[id]/svg?theme=&paper=0` with day-long cache headers,
+  so the HTML stays small and the browser caches each sheet.
+- **Your minute.** A datetime-local finder on the archive page that jumps to the minute
+  for any local instant.
+- **Smoke test.** `pnpm smoke` starts the built app and checks every route; CI runs it
+  after the build, alongside the unit tests.
